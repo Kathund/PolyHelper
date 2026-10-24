@@ -10,6 +10,7 @@ This document is generated from the Zod config schema in [`src/types/config.ts`]
 | `configVersion` | `number` | !IMPORTANT DO NOT TOUCH Config format version number                                 |
 | `discord`       | `object` | Configuration options for discord related stuff                                      |
 | `logger`        | `object` | Configuration options for the logger                                                 |
+| `sparkAnalysis` | `object` | Configuration options for spark profile analysis                                     |
 | `other`         | `object` | Configuration options for misc/other stuff or things that don't have a good location |
 
 ## discord
@@ -36,12 +37,14 @@ This document is generated from the Zod config schema in [`src/types/config.ts`]
 
 ### channels
 
-| Key          | Type             | Description                                                         |
-| ------------ | ---------------- | ------------------------------------------------------------------- |
-| `errorLog`   | `string OR null` | Discord channel id. If null, an auto-generated channel will be used |
-| `support`    | `string`         | Discord channel id                                                  |
-| `ticketLogs` | `string OR null` | Discord channel id. If null, an auto-generated channel will be used |
-| `botLogs`    | `string OR null` | Discord channel id. If null, an auto-generated channel will be used |
+| Key             | Type             | Description                                                         |
+| --------------- | ---------------- | ------------------------------------------------------------------- |
+| `errorLog`      | `string OR null` | Discord channel id. If null, an auto-generated channel will be used |
+| `support`       | `string`         | Discord channel id                                                  |
+| `ticketLogs`    | `string OR null` | Discord channel id. If null, an auto-generated channel will be used |
+| `botLogs`       | `string OR null` | Discord channel id. If null, an auto-generated channel will be used |
+| `sparkAnalysis` | `string OR null` | Discord channel id. If null, an auto-generated channel will be used |
+| `sparkFixes`    | `string OR null` | Discord channel id. If null, an auto-generated channel will be used |
 
 ### embeds
 
@@ -55,6 +58,15 @@ This document is generated from the Zod config schema in [`src/types/config.ts`]
 | ------------- | --------- | ------------------------------------------------- |
 | `saveToFiles` | `boolean` | Whether log output should be written to files     |
 | `location`    | `string`  | The location of where these files should be saved |
+
+## sparkAnalysis
+
+| Key               | Type             | Description                                                                    |
+| ----------------- | ---------------- | ------------------------------------------------------------------------------ |
+| `enabled`         | `boolean`        | Should /spark analyze spark profiles with Claude                               |
+| `anthropicApiKey` | `string`         | The Anthropic API key used to run the Claude agents                            |
+| `githubToken`     | `string OR null` | GitHub token used to read mod source code. If null, code search is unavailable |
+| `python`          | `string`         | The Python 3 command used to run the spark-analyzer skill script               |
 
 ## other
 
@@ -73,7 +85,7 @@ This document is generated from the Zod config schema in [`src/types/config.ts`]
 ---
 
 This document is [auto generated](/scripts/docs/Configuration.ts) and was last updated on
-`Thu, 22 Oct 2026 10:22:27 GMT` (`1792664547893`)
+`Fri, 23 Oct 2026 04:29:45 GMT` (`1792729785344`)
 
 To update this document please run `pnpm docgen` or contact a maintainer and ask them to update it.
 

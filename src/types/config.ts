@@ -68,7 +68,9 @@ export const ConfigDiscordChannels = zod
     errorLog: ConfigDiscordChannelIdGenerate,
     support: ConfigDiscordChannelId,
     ticketLogs: ConfigDiscordChannelIdGenerate,
-    botLogs: ConfigDiscordChannelIdGenerate
+    botLogs: ConfigDiscordChannelIdGenerate,
+    sparkAnalysis: ConfigDiscordChannelIdGenerate,
+    sparkFixes: ConfigDiscordChannelIdGenerate
   })
   .meta({ description: 'Configuration options the discord channels' });
 export const ConfigDiscord = zod
@@ -102,6 +104,18 @@ export const ConfigOther = zod
   })
   .meta({ description: "Configuration options for misc/other stuff or things that don't have a good location" });
 
+export const ConfigSparkAnalysis = zod
+  .object({
+    enabled: zod.boolean().meta({ description: 'Should /spark analyze spark profiles with Claude' }),
+    anthropicApiKey: zod.string().meta({ description: 'The Anthropic API key used to run the Claude agents' }),
+    githubToken: zod
+      .string()
+      .nullable()
+      .meta({ description: 'GitHub token used to read mod source code. If null, code search is unavailable' }),
+    python: zod.string().meta({ description: 'The Python 3 command used to run the spark-analyzer skill script' })
+  })
+  .meta({ description: 'Configuration options for spark profile analysis' });
+
 export const Config = zod.object({
   $schema: zod.string().meta({ description: '!IMPORTANT DO NOT TOUCH\nConfig schema format path' }),
   configVersion: zod
@@ -111,6 +125,7 @@ export const Config = zod.object({
     .meta({ description: '!IMPORTANT DO NOT TOUCH\nConfig format version number' }),
   discord: ConfigDiscord,
   logger: ConfigLogger,
+  sparkAnalysis: ConfigSparkAnalysis,
   other: ConfigOther
 });
 export type Config = zod.infer<typeof Config>;

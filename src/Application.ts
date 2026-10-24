@@ -3,6 +3,7 @@ import DatabaseManager from './database/DatabaseManager.ts';
 import DiscordManager from './discord/DiscordManager.ts';
 import PolyHelperError from './private/error.ts';
 import ScriptManager from './scripts/ScriptManager.ts';
+import SparkManager from './spark/SparkManager.ts';
 import axios, { AxiosHeaders, type AxiosRequestConfig, type AxiosResponse } from 'axios';
 import packageJson from '../package.json' with { type: 'json' };
 import { canSendMessages } from './utils/discordUtils.ts';
@@ -18,11 +19,13 @@ class Application {
   readonly database: DatabaseManager;
   readonly discord: DiscordManager;
   readonly scripts: ScriptManager;
+  readonly spark: SparkManager;
   static readonly cache: CacheHandler = new CacheHandler();
   constructor(readonly config: Config) {
     this.database = new DatabaseManager(this);
     this.discord = new DiscordManager(this);
     this.scripts = new ScriptManager(this);
+    this.spark = new SparkManager(this);
   }
 
   static async request<T>(url: string, config: AxiosRequestConfig = {}): Promise<AxiosResponse<T>> {
@@ -78,7 +81,7 @@ class Application {
   }
 
   static getUserAgent() {
-    return `${this.package.name}/g${this.runtimeInformation.commit} (github:Polyfrost/PolyHelper)`;
+    return `${this.package.name}/git:${this.runtimeInformation.commit} (github:Polyfrost/PolyHelper)`;
   }
 }
 

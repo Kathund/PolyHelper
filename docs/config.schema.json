@@ -43,9 +43,17 @@
             "botLogs": {
               "description": "Discord channel id. If null, an auto-generated channel will be used",
               "type": ["string", "null"]
+            },
+            "sparkAnalysis": {
+              "description": "Discord channel id. If null, an auto-generated channel will be used",
+              "type": ["string", "null"]
+            },
+            "sparkFixes": {
+              "description": "Discord channel id. If null, an auto-generated channel will be used",
+              "type": ["string", "null"]
             }
           },
-          "required": ["errorLog", "support", "ticketLogs", "botLogs"],
+          "required": ["errorLog", "support", "ticketLogs", "botLogs", "sparkAnalysis", "sparkFixes"],
           "additionalProperties": false,
           "description": "Configuration options the discord channels"
         },
@@ -80,6 +88,24 @@
       "additionalProperties": false,
       "description": "Configuration options for the logger"
     },
+    "sparkAnalysis": {
+      "type": "object",
+      "properties": {
+        "enabled": { "type": "boolean", "description": "Should /spark analyze spark profiles with Claude" },
+        "anthropicApiKey": { "type": "string", "description": "The Anthropic API key used to run the Claude agents" },
+        "githubToken": {
+          "description": "GitHub token used to read mod source code. If null, code search is unavailable",
+          "type": ["string", "null"]
+        },
+        "python": {
+          "type": "string",
+          "description": "The Python 3 command used to run the spark-analyzer skill script"
+        }
+      },
+      "required": ["enabled", "anthropicApiKey", "githubToken", "python"],
+      "additionalProperties": false,
+      "description": "Configuration options for spark profile analysis"
+    },
     "other": {
       "type": "object",
       "properties": {
@@ -100,6 +126,6 @@
       "description": "Configuration options for misc/other stuff or things that don't have a good location"
     }
   },
-  "required": ["$schema", "configVersion", "discord", "logger", "other"],
+  "required": ["$schema", "configVersion", "discord", "logger", "sparkAnalysis", "other"],
   "additionalProperties": false
 }

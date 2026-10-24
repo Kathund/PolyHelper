@@ -94,3 +94,14 @@ export interface MinimalRepository {
   created_at: string;
   updated_at: string;
 }
+
+export interface ContentEntry {
+  type: 'file' | 'dir' | 'symlink' | 'submodule';
+  name: string;
+  path: string;
+}
+
+export interface CodeSearchResponse {
+  total_count: number;
+  items: { path: string }[];
+}

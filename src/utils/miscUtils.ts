@@ -82,3 +82,7 @@ export function convertDevDataToName({ discord, displayName }: DevData, includeM
   }
   return `${discord !== undefined ? `${displayName} (@${discord.username})` : displayName}`;
 }
+
+export function getErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}

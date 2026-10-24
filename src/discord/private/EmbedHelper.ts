@@ -14,6 +14,7 @@ import type Ticket from '../../database/private/Ticket.ts';
 import type { EmbedHelperField, EmbedStyleData, EmbedStyleName } from '../../types/discord.ts';
 
 export default class EmbedHelper extends EmbedBuilder {
+  static embedDescriptionLimit = 4096;
   constructor(data?: EmbedData | APIEmbed) {
     super(data);
     if (data) return;
@@ -87,6 +88,11 @@ export default class EmbedHelper extends EmbedBuilder {
         : `\`@${value.username}\` (\`${value.id}\`) <@${value.id}>`;
     }
     return value;
+  }
+
+  setAIFooter(message: string = 'AI-generated. Check it before acting on it.'): this {
+    this.setFooter({ text: `⚠️ ${message}` });
+    return this;
   }
 }
 

@@ -16,7 +16,9 @@
       "errorLog": null,
       "support": "DISCORD_CHANNEL_ID",
       "ticketLogs": null,
-      "botLogs": null
+      "botLogs": null,
+      "sparkAnalysis": null,
+      "sparkFixes": null
     },
     "embeds": {
       "colors": {
@@ -33,6 +35,12 @@
   "logger": {
     "saveToFiles": true,
     "location": "./data/logs/{timestamp}"
+  },
+  "sparkAnalysis": {
+    "enabled": false,
+    "anthropicApiKey": "ANTHROPIC_API_KEY",
+    "githubToken": null,
+    "python": "python3"
   },
   "other": {
     "configBackups": {
