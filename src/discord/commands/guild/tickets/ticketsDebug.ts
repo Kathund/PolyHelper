@@ -26,7 +26,14 @@ class DebugTicketsCommand extends DiscordCommand {
     .addSubcommand((option) =>
       option
         .setName('sync-support-and-ticket-ping')
-        .setDescription('sync the support role users with the tick ping users')
+        .setDescription('sync the support role users with the ticket ping users')
+        .addStringOption((option) =>
+          option
+            .setName('support-team-id')
+            .setDescription('the support team id')
+            .setRequired(true)
+            .setAutocomplete(true)
+        )
     )
     .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild)
     .setFlags(InteractionFlag.RequiresGuild)
@@ -54,12 +61,13 @@ class DebugTicketsCommand extends DiscordCommand {
   }
 
   async executeSyncSupportAndTicketPing(interaction: InteractionWithGuild<ChatInputCommandInteraction>) {
-    const supportRole = await interaction.guild.roles.fetch(this.discord.application.config.discord.roles.support);
-    if (!supportRole) throw new PolyHelperError('Could not find the support role?');
-    const ticketPingRole = await interaction.guild.roles.fetch(
-      this.discord.application.config.discord.roles.ticketPing
+    const supportTeam = this.discord.application.database.getSupportTeam(
+      interaction.options.getString('support-team-id', true)
     );
-    if (!ticketPingRole) throw new PolyHelperError('Could not find the ticket ping role?');
+    if (!supportTeam) throw new PolyHelperError('Could not find this support team?');
+
+    const supportRole = await supportTeam.getSupportRole();
+    const ticketPingRole = await supportTeam.getTicketPingRole();
 
     const removed: string[] = [];
     const added: string[] = [];

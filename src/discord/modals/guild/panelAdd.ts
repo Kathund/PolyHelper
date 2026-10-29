@@ -23,6 +23,7 @@ class PanelAddModal extends DiscordModal {
       closedTicketPrefix: 'Closed',
       defaultTicketName: '[{cleanPanelName}] ticket-{username}',
       pingSupportRoleOnOpen: 1,
+      supportTeamId: null,
       enabled: this.getCheckbox(interaction, 'enabled') ? 1 : 0
     };
 

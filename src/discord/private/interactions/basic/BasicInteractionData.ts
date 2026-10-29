@@ -12,7 +12,7 @@ abstract class BasicInteractionData<
   constructor(protected readonly discord: DiscordManagerWithClient) {}
 
   protected getArgs(interaction: CustomIdInteraction): string[] {
-    if (!(this.metadata instanceof BasicInteractionMetadata)) throw new PolyHelperError('Unsuported interaction data');
+    if (!(this.metadata instanceof BasicInteractionMetadata)) throw new PolyHelperError('Unsupported interaction data');
     const split = interaction.customId.split(':');
     const id = split[0];
     if (!id) throw new PolyHelperError('Could not get the args of this interaction');

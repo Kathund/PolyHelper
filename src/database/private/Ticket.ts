@@ -90,11 +90,11 @@ class Ticket extends BaseParsedDatabaseItem<DatabaseTicket> {
   async sendInactivityAlert(): Promise<Ticket> {
     const thread = await this.getThread();
     const since = `<t:${Math.floor((this.lastMessageTimestamp ?? Date.now()) / 1000)}:R>`;
-    const supportRole = `<@&${this.manager.application.config.discord.roles.ticketPing}>`;
-    const content = this.lastMessageBySupport
-      ? `<@${this.owner}> Support is waiting on your reply. Last message was ${since}.`
-      : `${supportRole} This ticket is waiting on a reply from support. Last message was ${since}.`;
-    await thread.send({ content });
+    await thread.send({
+      content: this.lastMessageBySupport
+        ? `<@${this.owner}> Support is waiting on your reply. Last message was ${since}.`
+        : `<@&${this.panel.supportTeam?.ticketPingRole ?? 'MISSING'}> This ticket is waiting on a reply from support. Last message was ${since}.`
+    });
     return this.manager.updateTicketActivity(this.id, {
       lastMessageTimestamp: this.lastMessageTimestamp,
       lastMessageBySupport: this.#lastMessageBySupport,

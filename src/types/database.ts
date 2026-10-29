@@ -33,12 +33,14 @@ export const DatabasePanel = zod.object({
   closedTicketPrefix: zod.string(),
   defaultTicketName: zod.string(),
   pingSupportRoleOnOpen: DatabaseBoolean,
+  supportTeamId: zod.string().nullable(),
   enabled: DatabaseBoolean
 });
 export type DatabasePanel = zod.infer<typeof DatabasePanel>;
 
 export interface PanelSearchFilters extends DatabaseSearchFilters {
   enabled?: boolean;
+  supportTeamId?: DatabasePanel['supportTeamId'];
 }
 
 export const DatabaseTicket = zod.object({
@@ -79,3 +81,16 @@ export const DatabaseCloseRequest = zod.object({
   autoClose: zod.int().positive().nullable()
 });
 export type DatabaseCloseRequest = zod.infer<typeof DatabaseCloseRequest>;
+
+export const DatabaseSupportTeam = zod.object({
+  id: zod.string(),
+  name: zod.string(),
+  supportRole: zod.string(),
+  ticketPingRole: zod.string()
+});
+export type DatabaseSupportTeam = zod.infer<typeof DatabaseSupportTeam>;
+
+export interface SupportTeamSearchFilters extends DatabaseSearchFilters {
+  supportRole?: DatabaseSupportTeam['supportRole'];
+  ticketPingRole?: DatabaseSupportTeam['ticketPingRole'];
+}

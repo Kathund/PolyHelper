@@ -8,6 +8,7 @@ import {
   LabelBuilder,
   ModalBuilder,
   type RGBTuple,
+  RoleSelectMenuBuilder,
   TextDisplayBuilder,
   TextInputBuilder,
   TextInputStyle
@@ -15,7 +16,8 @@ import {
 import { ConfigDiscordEmbedsColors } from '../../types/config.ts';
 import { hexToRgb } from '../../utils/miscUtils.ts';
 import type Panel from '../../database/private/Panel.ts';
-import type { DatabaseCloseRequest, DatabasePanel } from '../../types/database.ts';
+import type SupportTeam from '../../database/private/SupportTeam.ts';
+import type { DatabaseCloseRequest, DatabasePanel, DatabaseSupportTeam } from '../../types/database.ts';
 
 export class PatchedContainerBuilder extends ContainerBuilder {
   constructor() {
@@ -158,4 +160,32 @@ export function CloseRequestButtons(id: DatabaseCloseRequest['id'], disabled: bo
       .setStyle(ButtonStyle.Secondary)
       .setDisabled(disabled || id === 'UNKNOWN')
   ];
+}
+
+export function SupportTeamPanel(supportTeam?: SupportTeam | DatabaseSupportTeam): ModalBuilder {
+  return new ModalBuilder().addLabelComponents(
+    new LabelBuilder().setLabel('name').setTextInputComponent(
+      new TextInputBuilder()
+        .setCustomId('name')
+        .setStyle(TextInputStyle.Short)
+        .setRequired(true)
+        .setValue(supportTeam?.name ?? '')
+    ),
+    new LabelBuilder().setLabel('support role').setRoleSelectMenuComponent(
+      new RoleSelectMenuBuilder()
+        .setCustomId('supportRole')
+        .setMinValues(1)
+        .setMaxValues(1)
+        .setRequired(true)
+        .setDefaultRoles(...(supportTeam?.supportRole ? [supportTeam.supportRole] : []))
+    ),
+    new LabelBuilder().setLabel('ticket ping role').setRoleSelectMenuComponent(
+      new RoleSelectMenuBuilder()
+        .setCustomId('ticketPingRole')
+        .setMinValues(1)
+        .setMaxValues(1)
+        .setRequired(true)
+        .setDefaultRoles(...(supportTeam?.ticketPingRole ? [supportTeam.ticketPingRole] : []))
+    )
+  );
 }

@@ -1,7 +1,9 @@
 import BaseParsedDatabaseItem from './BaseParsedDatabaseItem.ts';
 import EmbedHelper from '../../discord/private/EmbedHelper.ts';
+import PolyHelperError from '../../private/error.ts';
 import { replaceVariables } from '../../utils/stringUtils.ts';
 import type DatabaseManager from '../DatabaseManager.ts';
+import type SupportTeam from './SupportTeam.ts';
 import type { AutocompleteOption } from '../../types/discord.ts';
 import type { BaseMessageOptions, User } from 'discord.js';
 import type { DatabasePanel, TicketSearchFilters } from '../../types/database.ts';
@@ -20,6 +22,7 @@ class Panel extends BaseParsedDatabaseItem<DatabasePanel> {
   readonly closedTicketPrefix: DatabasePanel['closedTicketPrefix'];
   readonly defaultTicketName: DatabasePanel['defaultTicketName'];
   readonly #pingSupportRoleOnOpen: DatabasePanel['pingSupportRoleOnOpen'];
+  readonly supportTeamId: DatabasePanel['supportTeamId'];
   readonly #enabled: DatabasePanel['enabled'];
   constructor(
     data: DatabasePanel,
@@ -39,6 +42,7 @@ class Panel extends BaseParsedDatabaseItem<DatabasePanel> {
     this.closedTicketPrefix = data.closedTicketPrefix;
     this.defaultTicketName = data.defaultTicketName;
     this.#pingSupportRoleOnOpen = data.pingSupportRoleOnOpen;
+    this.supportTeamId = data.supportTeamId;
     this.#enabled = data.enabled;
   }
 
@@ -56,6 +60,13 @@ class Panel extends BaseParsedDatabaseItem<DatabasePanel> {
 
   get enabled(): boolean {
     return Boolean(this.#enabled);
+  }
+
+  get supportTeam(): SupportTeam | null {
+    if (this.supportTeamId === null) return null;
+    const supportTeam = this.manager.getSupportTeam(this.supportTeamId);
+    if (!supportTeam) throw new PolyHelperError('Could not find the matching support team?');
+    return supportTeam;
   }
 
   getStartingMessageData(user: User): BaseMessageOptions {
@@ -114,6 +125,7 @@ class Panel extends BaseParsedDatabaseItem<DatabasePanel> {
       closedTicketPrefix: this.closedTicketPrefix,
       defaultTicketName: this.defaultTicketName,
       pingSupportRoleOnOpen: this.#pingSupportRoleOnOpen,
+      supportTeamId: this.supportTeamId,
       enabled: this.#enabled
     };
   }

@@ -1,4 +1,5 @@
 import BasicInteractionData from './basic/BasicInteractionData.ts';
+import PolyHelperError from '../../../private/error.ts';
 import type { ModalSubmitInteraction } from 'discord.js';
 
 abstract class DiscordModal extends BasicInteractionData<ModalSubmitInteraction> {
@@ -16,6 +17,23 @@ abstract class DiscordModal extends BasicInteractionData<ModalSubmitInteraction>
     } catch {
       return [];
     }
+  }
+
+  protected getSelectedRoles(interaction: ModalSubmitInteraction, customId: string): string[] {
+    try {
+      return interaction.fields
+        .getSelectedRoles(customId, true)
+        .filter((role) => role !== null)
+        .map((role) => role.id);
+    } catch {
+      return [];
+    }
+  }
+
+  protected getSelectedRole(interaction: ModalSubmitInteraction, customId: string): string {
+    const role = this.getSelectedRoles(interaction, customId)[0];
+    if (!role) throw new PolyHelperError(`Could not get the "${customId}" role. There were no selected roles`);
+    return role;
   }
 
   protected getCheckbox(interaction: ModalSubmitInteraction, customId: string, defaultValue: boolean = true): boolean {

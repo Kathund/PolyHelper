@@ -16,7 +16,6 @@ import { InteractionFlag, InteractionResponse, type InteractionWithGuild } from 
 class TicketPanelsCommand extends DiscordCommand {
   override readonly metadata: DiscordCommandMetadata = new DiscordCommandMetadata()
     .setName('ticket-panels')
-    .addSubcommand((option) => option.setName('refresh').setDescription('refresh the panels message'))
     .addSubcommand((option) => option.setName('add').setDescription('add a panel'))
     .addSubcommand((option) =>
       option

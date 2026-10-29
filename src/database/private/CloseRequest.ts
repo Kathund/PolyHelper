@@ -8,12 +8,12 @@ import type { AutocompleteOption } from '../../types/discord.ts';
 import type { DatabaseCloseRequest } from '../../types/database.ts';
 
 class CloseRequest extends BaseParsedDatabaseItem<DatabaseCloseRequest> {
-  id: DatabaseCloseRequest['id'];
-  ticketId: DatabaseCloseRequest['ticketId'];
-  messageId: DatabaseCloseRequest['messageId'];
-  reason: DatabaseCloseRequest['reason'];
-  closer: DatabaseCloseRequest['closer'];
-  autoClose: DatabaseCloseRequest['autoClose'];
+  readonly id: DatabaseCloseRequest['id'];
+  readonly ticketId: DatabaseCloseRequest['ticketId'];
+  readonly messageId: DatabaseCloseRequest['messageId'];
+  readonly reason: DatabaseCloseRequest['reason'];
+  readonly closer: DatabaseCloseRequest['closer'];
+  readonly autoClose: DatabaseCloseRequest['autoClose'];
   constructor(
     data: DatabaseCloseRequest,
     private readonly manager: DatabaseManager

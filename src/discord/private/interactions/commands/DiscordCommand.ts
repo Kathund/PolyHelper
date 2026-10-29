@@ -30,6 +30,10 @@ abstract class DiscordCommand extends BasicInteractionData<ChatInputCommandInter
           .map((ticket) => ticket.toAutocompleteOption());
       case 'panel-id':
         return this.discord.application.database.getPanels({ limit: 25 }).map((panel) => panel.toAutocompleteOption());
+      case 'support-team-id':
+        return this.discord.application.database
+          .getSupportTeams({ limit: 25 })
+          .map((panel) => panel.toAutocompleteOption());
       case 'script-name':
         return this.discord.application.scripts.scripts
           .map(({ id }) => ({ value: id, name: titleCaseFromCamel(id) }))

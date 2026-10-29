@@ -3,14 +3,17 @@ import CloseRequest from './private/CloseRequest.ts';
 import DebugTicketsCommand from '../discord/commands/guild/tickets/ticketsDebug.ts';
 import Panel from './private/Panel.ts';
 import PolyHelperError from '../private/error.ts';
+import SupportTeam from './private/SupportTeam.ts';
 import Ticket from './private/Ticket.ts';
 import type Application from '../Application.ts';
 import type {
   DatabaseCloseRequest,
   DatabasePanel,
+  DatabaseSupportTeam,
   DatabaseTicket,
   DatabaseTicketActivity,
   PanelSearchFilters,
+  SupportTeamSearchFilters,
   TicketSearchFilters
 } from '../types/database.ts';
 import type { Message } from 'discord.js';
@@ -49,10 +52,23 @@ class DatabaseManager extends BasicDatabaseManager {
 
   getPanels(filters: PanelSearchFilters = {}): Panel[] {
     return this.db
-      .prepare<{ enabled: DatabasePanel['enabled'] | null; limit: number }, DatabasePanel>(
-        'SELECT * FROM panels WHERE (@enabled IS NULL OR enabled = @enabled) LIMIT @limit'
+      .prepare<
+        {
+          enabled: DatabasePanel['enabled'] | null;
+          supportTeamId: DatabasePanel['supportTeamId'];
+          filterSupportTeamId: number;
+          limit: number;
+        },
+        DatabasePanel
+      >(
+        'SELECT * FROM panels WHERE (@enabled IS NULL OR enabled = @enabled) AND (@filterSupportTeamId = 0 OR supportTeamId IS @supportTeamId) LIMIT @limit'
       )
-      .all({ enabled: filters.enabled === undefined ? null : filters.enabled ? 1 : 0, limit: filters.limit ?? -1 })
+      .all({
+        enabled: filters.enabled === undefined ? null : filters.enabled ? 1 : 0,
+        supportTeamId: filters.supportTeamId ?? null,
+        filterSupportTeamId: filters.supportTeamId === undefined ? 0 : 1,
+        limit: filters.limit ?? -1
+      })
       .map((data) => new Panel(data, this));
   }
 
@@ -66,7 +82,7 @@ class DatabaseManager extends BasicDatabaseManager {
     const id: DatabasePanel['id'] = crypto.randomUUID();
     this.db
       .prepare<DatabasePanel>(
-        'INSERT INTO panels (id, name, cleanName, title, description, buttonLabel, buttonEmoji, openingMessage, maxOpenTickets, pinnedTicketPrefix, closedTicketPrefix, defaultTicketName, pingSupportRoleOnOpen, enabled) VALUES (@id, @name, @cleanName, @title, @description, @buttonLabel, @buttonEmoji, @openingMessage, @maxOpenTickets, @pinnedTicketPrefix, @closedTicketPrefix, @defaultTicketName, @pingSupportRoleOnOpen, @enabled)'
+        'INSERT INTO panels (id, name, cleanName, title, description, buttonLabel, buttonEmoji, openingMessage, maxOpenTickets, pinnedTicketPrefix, closedTicketPrefix, defaultTicketName, pingSupportRoleOnOpen, supportTeamId, enabled) VALUES (@id, @name, @cleanName, @title, @description, @buttonLabel, @buttonEmoji, @openingMessage, @maxOpenTickets, @pinnedTicketPrefix, @closedTicketPrefix, @defaultTicketName, @pingSupportRoleOnOpen, pingSupportRoleOnOpen, @supportTeamId, @enabled)'
       )
       .run({ ...panelData, id });
     const panel = this.getPanel(id);
@@ -87,7 +103,7 @@ class DatabaseManager extends BasicDatabaseManager {
     if (!panel) throw new PolyHelperError('Could not find this panel?');
     this.db
       .prepare<DatabasePanel>(
-        'UPDATE panels SET name = @name, cleanName = @cleanName, title = @title, description = @description, buttonLabel = @buttonLabel, buttonEmoji = @buttonEmoji, openingMessage = @openingMessage, maxOpenTickets = @maxOpenTickets, pinnedTicketPrefix = @pinnedTicketPrefix, closedTicketPrefix = @closedTicketPrefix, defaultTicketName = @defaultTicketName, pingSupportRoleOnOpen = @pingSupportRoleOnOpen, enabled = @enabled WHERE id = @id'
+        'UPDATE panels SET name = @name, cleanName = @cleanName, title = @title, description = @description, buttonLabel = @buttonLabel, buttonEmoji = @buttonEmoji, openingMessage = @openingMessage, maxOpenTickets = @maxOpenTickets, pinnedTicketPrefix = @pinnedTicketPrefix, closedTicketPrefix = @closedTicketPrefix, defaultTicketName = @defaultTicketName, pingSupportRoleOnOpen = @pingSupportRoleOnOpen, supportTeamId = @supportTeamId, enabled = @enabled WHERE id = @id'
       )
       .run(data);
     const newPanel = this.getPanel(data.id);
@@ -208,6 +224,63 @@ class DatabaseManager extends BasicDatabaseManager {
     const closeRequest = this.getCloseRequest(id);
     if (closeRequest) await closeRequest.updateMessageButtons(true);
     this.db.prepare<DatabaseCloseRequest['id']>('DELETE FROM closeRequests WHERE id = ?').run(id);
+  }
+
+  getSupportTeam(id: DatabaseSupportTeam['id']): SupportTeam | undefined {
+    const data = this.db
+      .prepare<[DatabaseSupportTeam['id']], DatabaseSupportTeam>('SELECT * FROM supportTeams WHERE id = ?')
+      .get(id);
+    if (!data) return data;
+    return new SupportTeam(data, this);
+  }
+
+  getSupportTeams(filters: SupportTeamSearchFilters = {}): SupportTeam[] {
+    return this.db
+      .prepare<
+        {
+          supportRole: DatabaseSupportTeam['supportRole'] | null;
+          ticketPingRole: DatabaseSupportTeam['ticketPingRole'] | null;
+          limit: number;
+        },
+        DatabaseSupportTeam
+      >(
+        'SELECT * FROM supportTeams WHERE (@supportRole IS NULL OR supportRole = @supportRole) AND (@ticketPingRole IS NULL OR ticketPingRole = @ticketPingRole) LIMIT @limit'
+      )
+      .all({
+        supportRole: filters.supportRole ?? null,
+        ticketPingRole: filters.ticketPingRole ?? null,
+        limit: filters.limit ?? -1
+      })
+      .map((data) => new SupportTeam(data, this));
+  }
+
+  insertSupportTeam(data: Omit<DatabaseSupportTeam, 'id'>): SupportTeam {
+    const id: DatabaseSupportTeam['id'] = crypto.randomUUID();
+    this.db
+      .prepare<DatabaseSupportTeam>(
+        'INSERT INTO supportTeams (id, name, supportRole, ticketPingRole) VALUES (@id, @name, @supportRole, @ticketPingRole)'
+      )
+      .run({ ...data, id });
+    return new SupportTeam({ ...data, id }, this);
+  }
+
+  updateSupportTeam(data: DatabaseSupportTeam): SupportTeam {
+    const update = this.db
+      .prepare<DatabaseSupportTeam>(
+        'UPDATE supportTeams SET name = @name, supportRole = @supportRole, ticketPingRole = @ticketPingRole WHERE id = @id'
+      )
+      .run(data);
+    if (update.changes === 0) throw new PolyHelperError('Could not find this support team?');
+    return new SupportTeam(data, this);
+  }
+
+  async deleteSupportTeam(id: DatabaseSupportTeam['id']) {
+    const supportTeam = this.getSupportTeam(id);
+    if (supportTeam) {
+      const panels = supportTeam.getPanels();
+      for (const panel of panels) await this.updatePanel({ ...panel.toJSON(), supportTeamId: null });
+    }
+    this.db.prepare<DatabaseCloseRequest['id']>('DELETE FROM supportTeams WHERE id = ?').run(id);
   }
 }
 

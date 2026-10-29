@@ -2,7 +2,7 @@ import BasicInteractionMetadata from '../../../private/interactions/basic/BasicI
 import DiscordButton from '../../../private/interactions/DiscordButton.ts';
 import EmbedHelper from '../../../private/EmbedHelper.ts';
 import PolyHelperError from '../../../../private/error.ts';
-import { type ButtonInteraction, ChannelType, ThreadAutoArchiveDuration } from 'discord.js';
+import { type ButtonInteraction, ChannelType, MessageFlags, ThreadAutoArchiveDuration } from 'discord.js';
 import { InteractionFlag, InteractionResponse, type InteractionWithGuild } from '../../../../types/discord.ts';
 import { getUserDisplayName } from '../../../../utils/discordUtils.ts';
 
@@ -58,14 +58,23 @@ class OpenTicketButton extends DiscordButton {
     const startingMessage = await thread.send(panel.getStartingMessageData(interaction.user));
     await startingMessage.pin(auditLogReason);
 
-    if (panel.pingSupportRoleOnOpen) {
-      const pingMessage = await thread.send({
-        content: `<@&${this.discord.application.config.discord.roles.ticketPing}>`
+    if (panel.supportTeam) {
+      const message = await thread.send({
+        content: 'This message is used to add people to the thread without mentioning them. Please ignore it',
+        flags: MessageFlags.SuppressNotifications
       });
-      await pingMessage.edit({
-        content: `<@&${this.discord.application.config.discord.roles.ticketPing}><@&${this.discord.application.config.discord.roles.support}>`
+      await message.edit({
+        content: [
+          message.content,
+          `<@&${panel.supportTeam.supportRole}>`,
+          `<@&${panel.supportTeam.ticketPingRole}>`
+        ].join('\n')
       });
-      await pingMessage.delete();
+      await message.delete();
+
+      if (panel.pingSupportRoleOnOpen) {
+        await thread.send({ content: `<@&${panel.supportTeam.ticketPingRole}>` }).then((message) => message.delete());
+      }
     }
 
     const ticket = this.discord.application.database.insertTicket({
