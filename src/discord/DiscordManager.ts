@@ -131,10 +131,8 @@ class DiscordManager {
       extraData.push({ name: 'Author', value: context.author, format: 'Discord User' });
       extraData.push({ name: 'URL', value: context.url });
     }
-    if (context.channel) {
-      extraData.push({ name: 'Channel', value: `<#${context.channel.id}> (\`${context.channel.id}\`)` });
-    }
-    if (context.guild) extraData.push({ name: 'Guild', value: `\`${context.guild.name}\` (\`${context.guild.id}\`)` });
+    if (context.channel) extraData.push({ name: 'Channel', value: context.channel, format: 'Discord Channel' });
+    if (context.guild) extraData.push({ name: 'Guild', value: context.guild, format: 'Discord Guild' });
     return extraData;
   }
 

@@ -6,20 +6,7 @@ export const EmbedStyles = {
   Warning: { author: { name: 'An Warning has occurred' }, color: 'Yellow' },
   Error: { author: { name: 'An Error has occurred' }, color: 'Red' },
   Success: { author: { name: 'Success' }, color: 'Green' },
-  Ticket: {
-    title: 'Showing Ticket Data',
-    color: 'Blue',
-    footer: 'Amber',
-    footerMessage: 'Last Updated',
-    timestamp: 'Now'
-  },
-  TicketsOverview: {
-    title: 'Showing Tickets Overview',
-    color: 'Pink',
-    footer: 'Amber',
-    footerMessage: 'Last Updated',
-    timestamp: 'Now'
-  }
+  DataInfo: { title: 'Showing Data', color: 'Pink', footer: 'Amber', footerMessage: 'Last Updated', timestamp: 'Now' }
 } satisfies Record<string, EmbedStyleData>;
 
 export const CommonDevs = {

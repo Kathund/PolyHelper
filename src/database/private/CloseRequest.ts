@@ -1,4 +1,5 @@
 import BaseParsedDatabaseItem from './BaseParsedDatabaseItem.ts';
+import EmbedHelper from '../../discord/private/EmbedHelper.ts';
 import PolyHelperError from '../../private/error.ts';
 import { ActionRowBuilder, type ButtonBuilder, GuildMember, type Message } from 'discord.js';
 import { CloseRequestButtons } from '../../discord/private/ComponentHelper.ts';
@@ -54,6 +55,24 @@ class CloseRequest extends BaseParsedDatabaseItem<DatabaseCloseRequest> {
     }
 
     return await this.manager.application.discord.guild.members.fetch(this.closer);
+  }
+
+  override toEmbed(): EmbedHelper {
+    const embed = new EmbedHelper()
+      .setStyle('DataInfo')
+      .setTitle('Showing Close Request Data')
+      .addFields(
+        { name: 'ID', value: this.id, format: 'Block' },
+        { name: 'Ticket Id', value: this.ticketId, format: 'Block' },
+        { name: 'Message Id', value: this.messageId, format: 'Block' },
+        { name: 'Reason', value: this.reason, format: 'Block' },
+        { name: 'Closer', value: this.closer, format: 'Discord User' }
+      );
+
+    if (this.autoClose !== null) embed.addFields({ name: 'Auto Close', value: this.autoClose, format: 'Timestamp' });
+    else embed.addFields({ name: 'Auto Close', value: '-' });
+
+    return embed;
   }
 
   override toAutocompleteOption(): AutocompleteOption {

@@ -106,6 +106,17 @@ class Panel extends BaseParsedDatabaseItem<DatabasePanel> {
     };
   }
 
+  override toEmbed(): EmbedHelper {
+    return new EmbedHelper()
+      .setStyle('DataInfo')
+      .setTitle('Showing Panel Data')
+      .addFields(
+        { name: 'ID', value: this.id, format: 'Block' },
+        { name: 'Description', value: this.description, format: 'Block' },
+        { name: 'Enabled', value: this.enabled, format: 'Boolean' }
+      );
+  }
+
   override toAutocompleteOption(): AutocompleteOption {
     return { name: this.id, value: this.id };
   }

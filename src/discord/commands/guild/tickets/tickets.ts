@@ -133,7 +133,8 @@ class TicketsCommand extends DiscordCommand {
     return {
       embeds: [
         new EmbedHelper()
-          .setStyle('TicketsOverview')
+          .setStyle('DataInfo')
+          .setTitle('Showing Tickets Overview')
           .setFields(
             parsedPanels.map((panel) => ({
               name: panel.name,

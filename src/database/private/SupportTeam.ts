@@ -1,10 +1,11 @@
 import BaseParsedDatabaseItem from './BaseParsedDatabaseItem.ts';
+import EmbedHelper from '../../discord/private/EmbedHelper.ts';
 import PolyHelperError from '../../private/error.ts';
+import { ActionRowBuilder, type BaseMessageOptions, ButtonBuilder, ButtonStyle, type Role } from 'discord.js';
 import type DatabaseManager from '../DatabaseManager.ts';
 import type Panel from './Panel.ts';
 import type { AutocompleteOption } from '../../types/discord.ts';
 import type { DatabaseSupportTeam } from '../../types/database.ts';
-import type { Role } from 'discord.js';
 
 class SupportTeam extends BaseParsedDatabaseItem<DatabaseSupportTeam> {
   readonly id: DatabaseSupportTeam['id'];
@@ -44,8 +45,38 @@ class SupportTeam extends BaseParsedDatabaseItem<DatabaseSupportTeam> {
     return role;
   }
 
-  getPanels(): Panel[] {
+  get panels(): Panel[] {
     return this.manager.getPanels({ supportTeamId: this.id });
+  }
+
+  override toEmbed(): EmbedHelper {
+    return new EmbedHelper()
+      .setStyle('DataInfo')
+      .setTitle('Showing Support Team Data')
+      .addFields(
+        { name: 'ID', value: this.id, format: 'Block' },
+        { name: 'Support Role', value: `<@&${this.supportRole}> (\`${this.supportRole}\`)` },
+        { name: 'Ticket Ping Role', value: `<@&${this.ticketPingRole}> (\`${this.ticketPingRole}\`)` },
+        { name: 'Amount of Panels', value: this.panels.length.toString(), format: 'Small Block' }
+      );
+  }
+
+  getMessageData(): BaseMessageOptions {
+    return {
+      embeds: [this.toEmbed()],
+      components: [
+        new ActionRowBuilder<ButtonBuilder>().addComponents(
+          new ButtonBuilder()
+            .setLabel('Edit')
+            .setStyle(ButtonStyle.Secondary)
+            .setCustomId(`editSupportTeam:${this.id}`),
+          new ButtonBuilder()
+            .setLabel('Refresh')
+            .setStyle(ButtonStyle.Secondary)
+            .setCustomId(`refreshSupportTeam:${this.id}`)
+        )
+      ]
+    };
   }
 
   override toAutocompleteOption(): AutocompleteOption {

@@ -14,6 +14,8 @@ import type {
   MessageContextMenuCommandInteraction,
   ModalMessageModalSubmitInteraction,
   ModalSubmitInteraction,
+  PartialUser,
+  Role,
   StringSelectMenuInteraction,
   TextBasedChannel,
   User,
@@ -89,9 +91,22 @@ export interface EmbedStyleData {
   timestamp?: Date | number | 'Now';
 }
 
-export type EmbedHelperValueFormatter = 'Small Block' | 'Block' | 'Timestamp' | 'Boolean' | 'Discord User';
+export type EmbedHelperValueFormatter =
+  | 'Small Block'
+  | 'Block'
+  | 'Timestamp'
+  | 'Boolean'
+  | 'Discord User'
+  | 'Discord Role'
+  | 'Discord Channel'
+  | 'Discord Guild';
 export type EmbedHelperField =
   | (APIEmbedField & { format?: 'Small Block' | 'Block' })
   | (Omit<APIEmbedField, 'value'> & { value: number; format: 'Timestamp' })
   | (Omit<APIEmbedField, 'value'> & { value: boolean; format: 'Boolean' })
-  | (Omit<APIEmbedField, 'value'> & { value: User | string; format: 'Discord User' });
+  | (Omit<APIEmbedField, 'value'> & { value: User | string; format: 'Discord User' })
+  | (Omit<APIEmbedField, 'value'> & { value: Role | string; format: 'Discord Role' })
+  | (Omit<APIEmbedField, 'value'> & { value: TextBasedChannel | string; format: 'Discord Channel' })
+  | (Omit<APIEmbedField, 'value'> & { value: Guild | string; format: 'Discord Guild' });
+
+export type DiscordUser = GuildMember | User | PartialUser;

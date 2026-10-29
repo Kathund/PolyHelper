@@ -1,4 +1,5 @@
 import BaseParsedDatabaseItem from './BaseParsedDatabaseItem.ts';
+import EmbedHelper, { TicketActionEmbed } from '../../discord/private/EmbedHelper.ts';
 import PolyHelperError from '../../private/error.ts';
 import ms from 'ms';
 import {
@@ -14,8 +15,7 @@ import {
   User
 } from 'discord.js';
 import { CloseRequestButtons } from '../../discord/private/ComponentHelper.ts';
-import { TicketActionEmbed, TicketEmbed } from '../../discord/private/EmbedHelper.ts';
-import { getMention, getUserDisplayName, getUserId, isSupportMember } from '../../utils/discordUtils.ts';
+import { getId, getMention, getUserDisplayName, isSupportMember } from '../../utils/discordUtils.ts';
 import { getReason, replaceVariables } from '../../utils/stringUtils.ts';
 import { toError } from '../../utils/miscUtils.ts';
 import type CloseRequest from './CloseRequest.ts';
@@ -334,7 +334,7 @@ class Ticket extends BaseParsedDatabaseItem<DatabaseTicket> {
     if (this.pinned) throw new PolyHelperError('This ticket is pinned. Please unpin it before closing');
     if (this.linkedCloseRequest) {
       const closeRequestMessage = await this.linkedCloseRequest.getMessage();
-      throw new PolyHelperError(`There is already an active close request for this ticket. ${closeRequestMessage.url}`);
+      throw new PolyHelperError(`There is already an active close request for this this. ${closeRequestMessage.url}`);
     }
     reason = getReason(reason);
 
@@ -361,7 +361,7 @@ class Ticket extends BaseParsedDatabaseItem<DatabaseTicket> {
       ticketId: this.id,
       messageId: message.id,
       reason,
-      closer: getUserId(executor),
+      closer: getId(executor),
       autoClose
     });
   }
@@ -371,7 +371,7 @@ class Ticket extends BaseParsedDatabaseItem<DatabaseTicket> {
     const startingMessage = await this.getStartingMessage();
     const pinMessage = await this.getPinMessage();
     return {
-      embeds: [new TicketEmbed(this)],
+      embeds: [this.toEmbed()],
       components: [
         new ActionRowBuilder<ButtonBuilder>().addComponents(
           new ButtonBuilder().setLabel('Go To Thread').setStyle(ButtonStyle.Link).setURL(thread.url),
@@ -403,6 +403,21 @@ class Ticket extends BaseParsedDatabaseItem<DatabaseTicket> {
         )
       ]
     };
+  }
+
+  override toEmbed(): EmbedHelper {
+    return new EmbedHelper()
+      .setStyle('DataInfo')
+      .setTitle('Showing Ticket Data')
+      .addFields(
+        { name: 'ID', value: this.id, format: 'Block' },
+        { name: 'Panel ID', value: this.panelId, format: 'Block' },
+        { name: 'Thread', value: `<#${this.threadId}>` },
+        { name: 'Open Timestamp', value: Math.floor(this.openingTimestamp / 1000), format: 'Timestamp' },
+        { name: 'Ticket Owner', value: this.owner, format: 'Discord User' },
+        { name: 'Is Closed', value: this.closed, format: 'Boolean' },
+        { name: 'Is Pinned', value: this.pinned, format: 'Boolean' }
+      );
   }
 
   override toAutocompleteOption(): AutocompleteOption {

@@ -277,8 +277,7 @@ class DatabaseManager extends BasicDatabaseManager {
   async deleteSupportTeam(id: DatabaseSupportTeam['id']) {
     const supportTeam = this.getSupportTeam(id);
     if (supportTeam) {
-      const panels = supportTeam.getPanels();
-      for (const panel of panels) await this.updatePanel({ ...panel.toJSON(), supportTeamId: null });
+      for (const panel of supportTeam.panels) await this.updatePanel({ ...panel.toJSON(), supportTeamId: null });
     }
     this.db.prepare<DatabaseCloseRequest['id']>('DELETE FROM supportTeams WHERE id = ?').run(id);
   }

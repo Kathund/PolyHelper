@@ -12,7 +12,6 @@ import { CommonDevs, EmbedStyles } from '../../private/constants.ts';
 import { ConfigDiscordEmbedsColors } from '../../types/config.ts';
 import { getFullUserDisplayName, getMention } from '../../utils/discordUtils.ts';
 import { getReason } from '../../utils/stringUtils.ts';
-import type Ticket from '../../database/private/Ticket.ts';
 import type { DevData, DevName } from '../../types/application.ts';
 import type { EmbedHelperField, EmbedStyleData, EmbedStyleName } from '../../types/discord.ts';
 import type { TicketAction } from '../../types/misc.ts';
@@ -90,8 +89,18 @@ export default class EmbedHelper extends EmbedBuilder {
       return typeof value === 'string'
         ? `<@${value}> (\`${value}\`)`
         : `\`@${value.username}\` (\`${value.id}\`) <@${value.id}>`;
+    } else if (format === 'Discord Role') {
+      return typeof value === 'string'
+        ? `<@&${value}> (\`${value}\`)`
+        : `\`@${value.name}\` (\`${value.id}\`) <@&${value.id}>`;
+    } else if (format === 'Discord Channel') {
+      return typeof value === 'string'
+        ? `<#${value}> (\`${value}\`)`
+        : `\`${'name' in value ? value.name : 'UNKNOWN'}\` (\`${value.id}\`) <#${value.id}>`;
+    } else if (format === 'Discord Guild') {
+      return typeof value === 'string' ? `\`${value}\`` : `\`@${value.name}\` (\`${value.id}\`)`;
     }
-    return value;
+    return String(value);
   }
 }
 
@@ -113,22 +122,6 @@ export class SuccessEmbed extends EmbedHelper {
   constructor() {
     super();
     this.setStyle('Success');
-  }
-}
-
-export class TicketEmbed extends SuccessEmbed {
-  constructor(ticket: Ticket) {
-    super();
-    this.setStyle('Ticket');
-    this.addFields(
-      { name: 'Ticket ID', value: ticket.id, format: 'Block' },
-      { name: 'Panel ID', value: ticket.panelId, format: 'Block' },
-      { name: 'Thread', value: `<#${ticket.threadId}>` },
-      { name: 'Open Timestamp', value: Math.floor(ticket.openingTimestamp / 1000), format: 'Timestamp' },
-      { name: 'Ticket Owner', value: ticket.owner, format: 'Discord User' },
-      { name: 'Is Closed', value: ticket.closed, format: 'Boolean' },
-      { name: 'Is Pinned', value: ticket.pinned, format: 'Boolean' }
-    );
   }
 }
 
