@@ -4,3 +4,5 @@
 /testData/
 /config.json
 /config.test.json
+/nohup.out
+/pidfile
