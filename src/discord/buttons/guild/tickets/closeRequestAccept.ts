@@ -18,7 +18,7 @@ class CloseRequestAcceptButton extends DiscordButton {
     await interaction.followUp({
       embeds: [
         new EmbedHelper()
-          .setTitle('Closeing...')
+          .setTitle('Closing...')
           .setDescription(`Close request has been accepted by <@${interaction.user.id}>`)
       ]
     });
