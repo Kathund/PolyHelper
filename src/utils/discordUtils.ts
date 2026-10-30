@@ -4,6 +4,7 @@ import {
   type APIInteractionGuildMember,
   BaseChannel,
   type BaseInteraction,
+  ButtonStyle,
   type Channel,
   type Client,
   GuildMember,
@@ -95,7 +96,7 @@ export async function canSendMessages(channel: SendableChannels): Promise<boolea
     });
 }
 
-export function parseInteractionType(type: InteractionType): string {
+export function convertInteractionTypeToHuman(type: InteractionType): string {
   switch (type) {
     case InteractionType.ApplicationCommand:
       return 'ApplicationCommand';
@@ -137,4 +138,22 @@ export function getMention(
   if (type === 'Role' || input instanceof Role) return `<@&${getId(input)}>`;
   if (type === 'Channel' || input instanceof BaseChannel) return `<#${getId(input)}>`;
   return `<@${getId(input)}>`;
+}
+
+export function convertButtonStyleToHuman(style: ButtonStyle): string {
+  switch (style) {
+    case ButtonStyle.Secondary:
+      return 'Secondary';
+    case ButtonStyle.Success:
+      return 'Success';
+    case ButtonStyle.Danger:
+      return 'Danger';
+    case ButtonStyle.Link:
+      return 'Link';
+    case ButtonStyle.Premium:
+      return 'Premium';
+    case ButtonStyle.Primary:
+    default:
+      return 'Primary';
+  }
 }

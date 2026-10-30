@@ -18,8 +18,8 @@ import {
   type SendableChannels,
   type TextChannel
 } from 'discord.js';
+import { convertInteractionTypeToHuman } from '../utils/discordUtils.ts';
 import { getCleanErrorEmbed, toError } from '../utils/miscUtils.ts';
-import { parseInteractionType } from '../utils/discordUtils.ts';
 import { writeFile } from 'node:fs/promises';
 import type Application from '../Application.ts';
 import type BasicInteractionMetadata from './private/interactions/basic/BasicInteractionMetadata.ts';
@@ -117,7 +117,7 @@ class DiscordManager {
     if (context instanceof BaseInteraction) {
       extraData.push({ name: 'Source', value: 'Discord Interaction' });
       extraData.push({ name: 'User', value: context.user, format: 'Discord User' });
-      extraData.push({ name: 'Interaction Type', value: parseInteractionType(context.type) });
+      extraData.push({ name: 'Interaction Type', value: convertInteractionTypeToHuman(context.type) });
       if (context.isCommand()) {
         extraData.push({ name: 'Command', value: context.commandName, format: 'Small Block' });
       }

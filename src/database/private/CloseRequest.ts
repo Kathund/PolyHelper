@@ -1,7 +1,14 @@
 import BaseParsedDatabaseItem from './BaseParsedDatabaseItem.ts';
 import EmbedHelper from '../../discord/private/EmbedHelper.ts';
 import PolyHelperError from '../../private/error.ts';
-import { ActionRowBuilder, type ButtonBuilder, GuildMember, type Message } from 'discord.js';
+import {
+  ActionRowBuilder,
+  type BaseMessageOptions,
+  ButtonBuilder,
+  ButtonStyle,
+  GuildMember,
+  type Message
+} from 'discord.js';
 import { CloseRequestButtons } from '../../discord/private/ComponentHelper.ts';
 import type DatabaseManager from '../DatabaseManager.ts';
 import type Ticket from './Ticket.ts';
@@ -73,6 +80,24 @@ class CloseRequest extends BaseParsedDatabaseItem<DatabaseCloseRequest> {
     else embed.addFields({ name: 'Auto Close', value: '-' });
 
     return embed;
+  }
+
+  override toMessageData(): BaseMessageOptions {
+    return {
+      embeds: [this.toEmbed()],
+      components: [
+        new ActionRowBuilder<ButtonBuilder>().addComponents(
+          new ButtonBuilder()
+            .setLabel('Refresh')
+            .setStyle(ButtonStyle.Secondary)
+            .setCustomId(`refreshData:closeRequest:${this.id}`),
+          new ButtonBuilder()
+            .setLabel('Export JSON')
+            .setStyle(ButtonStyle.Secondary)
+            .setCustomId(`exportData:ticket:${this.id}`)
+        )
+      ]
+    };
   }
 
   override toAutocompleteOption(): AutocompleteOption {

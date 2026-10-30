@@ -1,11 +1,11 @@
 import ConfigManager from '../src/ConfigManager.ts';
 import zod from 'zod';
 import { CommonDevs } from '../src/private/constants.ts';
-import { type TemplatePrimitive, replaceVariables } from '../src/utils/stringUtils.ts';
 import { access, readFile, writeFile } from 'node:fs/promises';
 import { format } from 'prettier';
 import { getNestedValue } from '../src/utils/miscUtils.ts';
 import { markdownTable } from 'markdown-table';
+import { replaceVariables } from '../src/utils/stringUtils.ts';
 import type {
   ConfigMetadata,
   ConfigMetadataDescription,
@@ -16,6 +16,7 @@ import type {
 import type { MaintainerDevData } from '../src/types/application.ts';
 
 import '../src/private/logger.ts';
+import type { TemplatePrimitive } from '../src/types/misc.ts';
 
 export function addLines(
   content: string,

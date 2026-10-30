@@ -1,3 +1,5 @@
+import type { TemplatePrimitive } from '../types/misc.ts';
+
 export function titleCase(string: string): string {
   if (!string) return '';
   return string
@@ -58,8 +60,6 @@ export function formatSize(bytes: number): string {
 
   return `${bytes.toFixed(2)} ${units[index]}`;
 }
-
-export type TemplatePrimitive = string | number | boolean | null | undefined;
 
 export function replaceVariables(template: string, variables: Readonly<Record<string, TemplatePrimitive>>): string {
   return template.replace(/\{(\w+)\}/g, (match, name: string) => {

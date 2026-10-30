@@ -50,7 +50,10 @@ class DebugTicketsCommand extends DiscordCommand {
           .setColor('Blue')
           .setFields(...panels.map((panel) => ({ name: `**${panel.title}**`, value: panel.description })))
       ],
-      components: [new ActionRowBuilder<ButtonBuilder>().addComponents(panels.map((panel) => OpenTicketButton(panel)))]
+      components:
+        panels.length === 0
+          ? []
+          : [new ActionRowBuilder<ButtonBuilder>().addComponents(panels.map((panel) => OpenTicketButton(panel)))]
     });
   }
 

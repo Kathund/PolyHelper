@@ -13,7 +13,7 @@ class RenameCommand extends DiscordCommand {
     .setName('rename')
     .setDescription('Rename a ticket')
     .addStringOption((option) =>
-      option.setName('name').setDescription('Supported variables - {username} {id} {panelName} {cleanPanelName}')
+      option.setName('name').setDescription('Supported variables - {username} {id} {panelName}')
     )
     .setCleanErrorTitle('renaming this ticket')
     .setFlags(InteractionFlag.RequiresGuild)

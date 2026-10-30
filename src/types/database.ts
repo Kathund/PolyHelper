@@ -22,17 +22,19 @@ export const DatabaseBoolean = zod
 export const DatabasePanel = zod.object({
   id: zod.string(),
   name: zod.string(),
-  cleanName: zod.string(),
   title: zod.string(),
   description: zod.string(),
   buttonLabel: zod.string(),
   buttonEmoji: zod.string().nullable(),
+  buttonStyle: zod.union([zod.literal(1), zod.literal(2), zod.literal(3), zod.literal(4)]),
   openingMessage: zod.string(),
+  openingMessageContent: zod.string(),
+  openingMessageTitle: zod.string(),
   maxOpenTickets: zod.int().positive(),
   pinnedTicketPrefix: zod.string(),
   closedTicketPrefix: zod.string(),
   defaultTicketName: zod.string(),
-  pingSupportRoleOnOpen: DatabaseBoolean,
+  pingSupportTeamOnOpen: DatabaseBoolean,
   supportTeamId: zod.string().nullable(),
   enabled: DatabaseBoolean
 });
@@ -94,3 +96,5 @@ export interface SupportTeamSearchFilters extends DatabaseSearchFilters {
   supportRole?: DatabaseSupportTeam['supportRole'];
   ticketPingRole?: DatabaseSupportTeam['ticketPingRole'];
 }
+
+export type DatabaseItem = DatabaseCloseRequest | DatabasePanel | DatabaseSupportTeam | DatabaseTicket;

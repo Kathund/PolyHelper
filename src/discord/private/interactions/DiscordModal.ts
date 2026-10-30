@@ -43,6 +43,26 @@ abstract class DiscordModal extends BasicInteractionData<ModalSubmitInteraction>
       return defaultValue;
     }
   }
+
+  protected getRadioGroup(interaction: ModalSubmitInteraction, customId: string): string | undefined {
+    try {
+      return interaction.fields.getRadioGroup(customId) ?? undefined;
+    } catch {
+      return undefined;
+    }
+  }
+
+  protected getStringSelectValues(interaction: ModalSubmitInteraction, customId: string): string[] {
+    try {
+      return interaction.fields.getStringSelectValues(customId).map((value) => value);
+    } catch {
+      return [];
+    }
+  }
+
+  protected getStringSelectValue(interaction: ModalSubmitInteraction, customId: string): string | undefined {
+    return this.getStringSelectValues(interaction, customId)[0];
+  }
 }
 
 export default DiscordModal;

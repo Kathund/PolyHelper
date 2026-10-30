@@ -54,7 +54,7 @@ class TicketsCommand extends DiscordCommand {
     const ticketId = interaction.options.getString('ticket-id', true);
     const ticket = this.discord.application.database.getTicket(ticketId);
     if (!ticket) throw new PolyHelperError('Could not find the matching ticket?');
-    await interaction.followUp(await ticket.getMessageData());
+    await interaction.followUp(await ticket.toMessageData());
   }
 
   static getTicketsSearchMessageData(tickets: Ticket[], search: TicketSearch, owner: string): BaseMessageOptions {

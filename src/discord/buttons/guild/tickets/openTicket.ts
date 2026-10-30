@@ -48,7 +48,7 @@ class OpenTicketButton extends DiscordButton {
     const channel = await this.discord.application.discord.getSupportChannel();
     const auditLogReason = `Ticket opened by ${getUserDisplayName(interaction.user)}`;
     const thread = await channel.threads.create({
-      name: `[${panel.cleanName}] ticket-${interaction.user.username}`,
+      name: panel.parseTicketName({ user: interaction.user }),
       autoArchiveDuration: ThreadAutoArchiveDuration.OneWeek,
       type: ChannelType.PrivateThread,
       invitable: true,
@@ -72,7 +72,7 @@ class OpenTicketButton extends DiscordButton {
       });
       await message.delete();
 
-      if (panel.pingSupportRoleOnOpen) {
+      if (panel.pingSupportTeamOnOpen) {
         await thread.send({ content: `<@&${panel.supportTeam.ticketPingRole}>` }).then((message) => message.delete());
       }
     }

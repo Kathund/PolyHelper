@@ -1,3 +1,4 @@
+import PolyHelperError from '../../private/error.ts';
 import config from '../../../config.json' with { type: 'json' };
 import {
   ButtonBuilder,
@@ -8,7 +9,11 @@ import {
   LabelBuilder,
   ModalBuilder,
   type RGBTuple,
+  RadioGroupBuilder,
+  RadioGroupOptionBuilder,
   RoleSelectMenuBuilder,
+  StringSelectMenuBuilder,
+  StringSelectMenuOptionBuilder,
   TextDisplayBuilder,
   TextInputBuilder,
   TextInputStyle
@@ -59,9 +64,15 @@ export function ViewSourceCodeButton(): ButtonBuilder {
     .setURL('https://github.com/Polyfrost/PolyHelper');
 }
 
-export function OpenTicketButton({ id, buttonLabel, buttonEmoji, enabled }: Panel | DatabasePanel): ButtonBuilder {
+export function OpenTicketButton({
+  id,
+  buttonLabel,
+  buttonStyle,
+  buttonEmoji,
+  enabled
+}: Panel | DatabasePanel): ButtonBuilder {
   const button = new ButtonBuilder()
-    .setStyle(ButtonStyle.Secondary)
+    .setStyle(buttonStyle)
     .setLabel(buttonLabel)
     .setCustomId(`openTicket:${id}`)
     .setDisabled(!Boolean(enabled));
@@ -69,7 +80,7 @@ export function OpenTicketButton({ id, buttonLabel, buttonEmoji, enabled }: Pane
   return button;
 }
 
-export function BasicPanelModal(panel?: Panel | DatabasePanel): ModalBuilder {
+export function BasicPanelModal(panel?: Panel | DatabasePanel) {
   return new ModalBuilder().addLabelComponents(
     new LabelBuilder().setLabel('Panel Name').setTextInputComponent(
       new TextInputBuilder()
@@ -92,35 +103,101 @@ export function BasicPanelModal(panel?: Panel | DatabasePanel): ModalBuilder {
         .setRequired(true)
         .setValue(panel?.description ?? '')
     ),
-    new LabelBuilder().setLabel('Button Label').setTextInputComponent(
+    new LabelBuilder().setLabel('Max Open Tickets Open Simultaneously').setTextInputComponent(
       new TextInputBuilder()
-        .setCustomId('buttonLabel')
+        .setCustomId('maxOpenTickets')
         .setStyle(TextInputStyle.Short)
         .setRequired(true)
-        .setValue(panel?.buttonLabel ?? '')
+        .setValue(String(panel?.maxOpenTickets ?? 1))
     ),
+
     new LabelBuilder()
       .setLabel('Enabled')
       .setCheckboxComponent(new CheckboxBuilder().setCustomId('enabled').setDefault(Boolean(panel?.enabled ?? 1)))
   );
 }
 
-export function MiscPanelModal(panel?: Panel | DatabasePanel): ModalBuilder {
-  return new ModalBuilder()
-    .addLabelComponents(
-      new LabelBuilder().setLabel('Button Emoji (emoji id)').setTextInputComponent(
-        new TextInputBuilder()
-          .setCustomId('buttonEmoji')
-          .setStyle(TextInputStyle.Short)
-          .setValue(panel?.buttonEmoji ?? '')
-          .setRequired(false)
+export function SupportTeamPanelModal(
+  supportTeams: DatabaseSupportTeam[] | SupportTeam[],
+  panel?: Panel | DatabasePanel
+) {
+  if (supportTeams.length === 0) {
+    throw new PolyHelperError(
+      "There aren't any support teams. Please create one before trying to assign a support team"
+    );
+  }
+  return new ModalBuilder().addLabelComponents(
+    new LabelBuilder().setLabel('Support Team').setStringSelectMenuComponent(
+      new StringSelectMenuBuilder()
+        .setCustomId('supportTeamId')
+        .setOptions(
+          supportTeams.map((team) =>
+            new StringSelectMenuOptionBuilder()
+              .setLabel(team.name)
+              .setValue(team.id)
+              .setDefault(panel?.supportTeamId === team.id)
+          )
+        )
+        .setMinValues(1)
+        .setMaxValues(1)
+    ),
+    new LabelBuilder()
+      .setLabel('Ping Support Team On Open')
+      .setCheckboxComponent(
+        new CheckboxBuilder()
+          .setCustomId('pingSupportTeamOnOpen')
+          .setDefault(Boolean(panel?.pingSupportTeamOnOpen ?? 1))
+      )
+  );
+}
+
+export function ButtonOptionsPanelModal(panel?: Panel | DatabasePanel) {
+  return new ModalBuilder().addLabelComponents(
+    new LabelBuilder().setLabel('Label').setTextInputComponent(
+      new TextInputBuilder()
+        .setCustomId('buttonLabel')
+        .setStyle(TextInputStyle.Short)
+        .setValue(panel?.buttonLabel ?? '')
+        .setRequired(true)
+    ),
+    new LabelBuilder().setLabel('Emoji (emoji id)').setTextInputComponent(
+      new TextInputBuilder()
+        .setCustomId('buttonEmoji')
+        .setStyle(TextInputStyle.Short)
+        .setValue(panel?.buttonEmoji ?? '')
+        .setRequired(false)
+    ),
+    new LabelBuilder().setLabel('Style').setRadioGroupComponent(
+      new RadioGroupBuilder().setCustomId('buttonStyle').setOptions(
+        new RadioGroupOptionBuilder()
+          .setLabel('Primary')
+          .setValue('1')
+          .setDefault(panel === undefined ? false : panel.buttonStyle === 1),
+        new RadioGroupOptionBuilder()
+          .setLabel('Secondary')
+          .setValue('2')
+          .setDefault(panel === undefined ? true : panel.buttonStyle === 2),
+        new RadioGroupOptionBuilder()
+          .setLabel('Success')
+          .setValue('3')
+          .setDefault(panel === undefined ? false : panel.buttonStyle === 3),
+        new RadioGroupOptionBuilder()
+          .setLabel('Danger')
+          .setValue('4')
+          .setDefault(panel === undefined ? false : panel.buttonStyle === 4)
       )
     )
+  );
+}
+
+export function TicketOpenOptionsPanelModal(panel?: Panel | DatabasePanel) {
+  return new ModalBuilder()
     .addTextDisplayComponents(
       new TextDisplayBuilder().setContent(
         [
           '## Variables',
           '',
+          "- `{panelName}` - Ticket Panel's name",
           "- `{mention}` - Ticket Opener's mention",
           "- `{username}` - Ticket Opener's username",
           "- `{id}` - Ticket Opener's id"
@@ -128,20 +205,34 @@ export function MiscPanelModal(panel?: Panel | DatabasePanel): ModalBuilder {
       )
     )
     .addLabelComponents(
-      new LabelBuilder().setLabel('Starting Message').setTextInputComponent(
+      new LabelBuilder().setLabel('Starting Message Content').setTextInputComponent(
+        new TextInputBuilder()
+          .setCustomId('openingMessageContent')
+          .setStyle(TextInputStyle.Paragraph)
+          .setRequired(true)
+          .setValue(panel?.openingMessageContent ?? '{mention}')
+      ),
+      new LabelBuilder().setLabel('Starting Embed Title').setTextInputComponent(
+        new TextInputBuilder()
+          .setCustomId('openingMessageTitle')
+          .setStyle(TextInputStyle.Paragraph)
+          .setRequired(true)
+          .setValue(panel?.openingMessageTitle ?? '{panelName}')
+      ),
+      new LabelBuilder().setLabel('Starting Embed Description').setTextInputComponent(
         new TextInputBuilder()
           .setCustomId('openingMessage')
           .setStyle(TextInputStyle.Paragraph)
           .setRequired(true)
-          .setValue(panel?.openingMessage ?? '')
+          .setValue(panel?.openingMessage ?? '{panelName}')
       ),
-      new LabelBuilder().setLabel('Max Open Tickets Open Simultaneously ').setTextInputComponent(
-        new TextInputBuilder()
-          .setCustomId('maxOpenTickets')
-          .setStyle(TextInputStyle.Short)
-          .setRequired(true)
-          .setValue(String(panel?.maxOpenTickets ?? 1))
-      )
+      new LabelBuilder()
+        .setLabel('Ping Support Team On Open')
+        .setCheckboxComponent(
+          new CheckboxBuilder()
+            .setCustomId('pingSupportTeamOnOpen')
+            .setDefault(Boolean(panel?.pingSupportTeamOnOpen ?? 1))
+        )
     );
 }
 
@@ -162,7 +253,7 @@ export function CloseRequestButtons(id: DatabaseCloseRequest['id'], disabled: bo
   ];
 }
 
-export function SupportTeamPanel(supportTeam?: SupportTeam | DatabaseSupportTeam): ModalBuilder {
+export function SupportTeamModal(supportTeam?: SupportTeam | DatabaseSupportTeam): ModalBuilder {
   return new ModalBuilder().addLabelComponents(
     new LabelBuilder().setLabel('name').setTextInputComponent(
       new TextInputBuilder()

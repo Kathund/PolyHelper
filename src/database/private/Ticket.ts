@@ -192,11 +192,14 @@ class Ticket extends BaseParsedDatabaseItem<DatabaseTicket> {
 
     if (options.shouldReplaceVariables !== false) {
       const discord = await this.getDiscord();
+      if (options.name === undefined && options.shouldReplaceVariables) {
+        name = this.panel.parseTicketName({ user: discord.user, shouldReplaceVariables: true });
+      }
       name = replaceVariables(name, {
         username: discord.user.username,
         id: discord.user.id,
         panelName: this.panel.name,
-        cleanPanelName: this.panel.cleanName
+        cleanPanelName: this.panel.name
       });
     }
 
@@ -366,7 +369,22 @@ class Ticket extends BaseParsedDatabaseItem<DatabaseTicket> {
     });
   }
 
-  async getMessageData(): Promise<BaseMessageOptions> {
+  override toEmbed(): EmbedHelper {
+    return new EmbedHelper()
+      .setStyle('DataInfo')
+      .setTitle('Showing Ticket Data')
+      .addFields(
+        { name: 'ID', value: this.id, format: 'Block' },
+        { name: 'Panel ID', value: this.panelId, format: 'Block' },
+        { name: 'Thread', value: `<#${this.threadId}>` },
+        { name: 'Open Timestamp', value: Math.floor(this.openingTimestamp / 1000), format: 'Timestamp' },
+        { name: 'Ticket Owner', value: this.owner, format: 'Discord User' },
+        { name: 'Is Closed', value: this.closed, format: 'Boolean' },
+        { name: 'Is Pinned', value: this.pinned, format: 'Boolean' }
+      );
+  }
+
+  override async toMessageData(): Promise<BaseMessageOptions> {
     const thread = await this.getThread();
     const startingMessage = await this.getStartingMessage();
     const pinMessage = await this.getPinMessage();
@@ -393,31 +411,22 @@ class Ticket extends BaseParsedDatabaseItem<DatabaseTicket> {
             .setStyle(this.pinned ? ButtonStyle.Danger : ButtonStyle.Secondary)
             .setCustomId(this.pinned ? `unpinTicket:${this.id}` : `pinTicket:${this.id}`),
           new ButtonBuilder()
-            .setLabel('Refresh Embed')
-            .setStyle(ButtonStyle.Secondary)
-            .setCustomId(`refreshTicketEmbed:${this.id}`),
-          new ButtonBuilder()
             .setLabel('Join Thread')
             .setStyle(ButtonStyle.Success)
             .setCustomId(`joinThread:${this.threadId}`)
+        ),
+        new ActionRowBuilder<ButtonBuilder>().addComponents(
+          new ButtonBuilder()
+            .setLabel('Refresh')
+            .setStyle(ButtonStyle.Secondary)
+            .setCustomId(`refreshData:ticket:${this.id}`),
+          new ButtonBuilder()
+            .setLabel('Export JSON')
+            .setStyle(ButtonStyle.Secondary)
+            .setCustomId(`exportData:ticket:${this.id}`)
         )
       ]
     };
-  }
-
-  override toEmbed(): EmbedHelper {
-    return new EmbedHelper()
-      .setStyle('DataInfo')
-      .setTitle('Showing Ticket Data')
-      .addFields(
-        { name: 'ID', value: this.id, format: 'Block' },
-        { name: 'Panel ID', value: this.panelId, format: 'Block' },
-        { name: 'Thread', value: `<#${this.threadId}>` },
-        { name: 'Open Timestamp', value: Math.floor(this.openingTimestamp / 1000), format: 'Timestamp' },
-        { name: 'Ticket Owner', value: this.owner, format: 'Discord User' },
-        { name: 'Is Closed', value: this.closed, format: 'Boolean' },
-        { name: 'Is Pinned', value: this.pinned, format: 'Boolean' }
-      );
   }
 
   override toAutocompleteOption(): AutocompleteOption {

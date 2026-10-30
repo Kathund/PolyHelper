@@ -19,7 +19,10 @@ class SupportTeamModifyModal extends DiscordModal {
     const [id] = this.getArgs(interaction);
     if (id === undefined) {
       const supportTeam = this.discord.application.database.insertSupportTeam(data);
-      await interaction.followUp({ content: `Support Team "${supportTeam.name}" created.` });
+      await interaction.followUp({
+        ...supportTeam.toMessageData(),
+        content: `Support Team "${supportTeam.name}" created.`
+      });
     } else {
       const supportTeam = this.discord.application.database.updateSupportTeam({ id, ...data });
       await interaction.followUp({ content: `Support Team "${supportTeam.name}" updated.` });

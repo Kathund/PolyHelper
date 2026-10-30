@@ -55,32 +55,36 @@ class SupportTeam extends BaseParsedDatabaseItem<DatabaseSupportTeam> {
       .setTitle('Showing Support Team Data')
       .addFields(
         { name: 'ID', value: this.id, format: 'Block' },
+        { name: 'Name', value: this.name, format: 'Block' },
         { name: 'Support Role', value: `<@&${this.supportRole}> (\`${this.supportRole}\`)` },
         { name: 'Ticket Ping Role', value: `<@&${this.ticketPingRole}> (\`${this.ticketPingRole}\`)` },
         { name: 'Amount of Panels', value: this.panels.length.toString(), format: 'Small Block' }
       );
   }
 
-  getMessageData(): BaseMessageOptions {
+  override toMessageData(): BaseMessageOptions {
     return {
       embeds: [this.toEmbed()],
       components: [
         new ActionRowBuilder<ButtonBuilder>().addComponents(
-          new ButtonBuilder()
-            .setLabel('Edit')
-            .setStyle(ButtonStyle.Secondary)
-            .setCustomId(`editSupportTeam:${this.id}`),
+          new ButtonBuilder().setLabel('Edit').setStyle(ButtonStyle.Secondary).setCustomId(`editSupportTeam:${this.id}`)
+        ),
+        new ActionRowBuilder<ButtonBuilder>().addComponents(
           new ButtonBuilder()
             .setLabel('Refresh')
             .setStyle(ButtonStyle.Secondary)
-            .setCustomId(`refreshSupportTeam:${this.id}`)
+            .setCustomId(`refreshData:supportTeam:${this.id}`),
+          new ButtonBuilder()
+            .setLabel('Export JSON')
+            .setStyle(ButtonStyle.Secondary)
+            .setCustomId(`exportData:supportTeam:${this.id}`)
         )
       ]
     };
   }
 
   override toAutocompleteOption(): AutocompleteOption {
-    return { name: this.name, value: this.id };
+    return { name: `${this.name} (${this.id})`, value: this.id };
   }
 
   override toJSON(): DatabaseSupportTeam {

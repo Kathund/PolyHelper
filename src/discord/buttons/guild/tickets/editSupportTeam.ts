@@ -2,7 +2,7 @@ import BasicInteractionMetadata from '../../../private/interactions/basic/BasicI
 import DiscordButton from '../../../private/interactions/DiscordButton.ts';
 import PolyHelperError from '../../../../private/error.ts';
 import { InteractionFlag, InteractionResponse, type InteractionWithGuild } from '../../../../types/discord.ts';
-import { SupportTeamPanel } from '../../../private/ComponentHelper.ts';
+import { SupportTeamModal } from '../../../private/ComponentHelper.ts';
 import type { ButtonInteraction } from 'discord.js';
 
 class EditSupportTeamButton extends DiscordButton {
@@ -17,7 +17,7 @@ class EditSupportTeamButton extends DiscordButton {
     const supportTeam = this.discord.application.database.getSupportTeam(id);
     if (!supportTeam) throw new PolyHelperError('Could not find the matching support team?');
     await interaction.showModal(
-      SupportTeamPanel(supportTeam).setCustomId(`supportTeamModify:${id}`).setTitle('Editing a support team')
+      SupportTeamModal(supportTeam).setCustomId(`supportTeamModify:${id}`).setTitle('Editing a support team')
     );
   }
 }

@@ -15,8 +15,8 @@ class TicketSearchSelector extends DiscordStringSelectMenu {
     const ticket = this.discord.application.database.getTicket(ticketId);
     if (!ticket) throw new PolyHelperError('Could not find the matching ticket?');
     const [ownerId] = this.getArgs(interaction);
-    if (ownerId === interaction.user.id) await interaction.update(await ticket.getMessageData());
-    else await interaction.reply(await ticket.getMessageData());
+    if (ownerId === interaction.user.id) await interaction.update(await ticket.toMessageData());
+    else await interaction.reply(await ticket.toMessageData());
   }
 }
 

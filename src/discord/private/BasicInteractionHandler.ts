@@ -3,13 +3,13 @@ import assert from 'node:assert';
 import { type BaseInteraction, Collection } from 'discord.js';
 import { InteractionFlag, InteractionPermission, type InteractionTypes } from '../../types/discord.ts';
 import {
+  convertInteractionTypeToHuman,
   isAdminMember,
   isApplicationOwner,
   isInteractionInsideOfGuild,
   isModeratorMember,
   isPolyfrostTeamMember,
-  isSupportMember,
-  parseInteractionType
+  isSupportMember
 } from '../../utils/discordUtils.ts';
 import { toError } from '../../utils/miscUtils.ts';
 import type BasicInteractionData from './interactions/basic/BasicInteractionData.ts';
@@ -43,7 +43,7 @@ abstract class BasicInteractionHandler<
       await this.handleResponse(interaction, element);
 
       console.discord(
-        `Interaction ${parseInteractionType(interaction.type)} triggered by @${interaction.user.username} (${interaction.user.id}) | ${this.getIdFromInteraction(interaction)} (${this.getRawIdFromInteraction(interaction)})`
+        `Interaction ${convertInteractionTypeToHuman(interaction.type)} triggered by @${interaction.user.username} (${interaction.user.id}) | ${this.getIdFromInteraction(interaction)} (${this.getRawIdFromInteraction(interaction)})`
       );
 
       this.checkInteractionFlags(interaction, element.metadata.flags);

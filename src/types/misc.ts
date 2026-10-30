@@ -28,3 +28,5 @@ export interface TicketSearch {
   open?: boolean;
   owner?: string;
 }
+
+export type TemplatePrimitive = string | number | boolean | null | undefined;

@@ -10,9 +10,9 @@ import {
 import { InteractionResponse } from '../../types/discord.ts';
 
 class ViewCreditsButton extends DiscordButton {
-  override readonly metadata: BasicInteractionMetadata = new BasicInteractionMetadata('viewCredits').setResponse(
-    InteractionResponse.None
-  );
+  override readonly metadata: BasicInteractionMetadata = new BasicInteractionMetadata('viewCredits')
+    .setResponse(InteractionResponse.None)
+    .setFetchGuildMember(false);
 
   override async execute(interaction: ButtonInteraction) {
     const [ownerId] = this.getArgs(interaction);

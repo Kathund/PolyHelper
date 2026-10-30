@@ -3,7 +3,7 @@ import DiscordCommandMetadata from '../../../private/interactions/commands/Disco
 import PolyHelperError from '../../../../private/error.ts';
 import { type ChatInputCommandInteraction, MessageFlags, PermissionFlagsBits } from 'discord.js';
 import { InteractionFlag, InteractionResponse, type InteractionWithGuild } from '../../../../types/discord.ts';
-import { SupportTeamPanel } from '../../../private/ComponentHelper.ts';
+import { SupportTeamModal } from '../../../private/ComponentHelper.ts';
 
 class ManageSupportTeamsCommand extends DiscordCommand {
   override readonly metadata: DiscordCommandMetadata = new DiscordCommandMetadata()
@@ -51,7 +51,7 @@ class ManageSupportTeamsCommand extends DiscordCommand {
     .setFetchGuildMember(false);
 
   async executeAdd(interaction: InteractionWithGuild<ChatInputCommandInteraction>) {
-    await interaction.showModal(SupportTeamPanel().setCustomId('supportTeamModify').setTitle('Add a new support team'));
+    await interaction.showModal(SupportTeamModal().setCustomId('supportTeamModify').setTitle('Add a new support team'));
   }
 
   async executeView(interaction: InteractionWithGuild<ChatInputCommandInteraction>) {
@@ -59,7 +59,7 @@ class ManageSupportTeamsCommand extends DiscordCommand {
     const id = interaction.options.getString('support-team-id', true);
     const supportTeam = this.discord.application.database.getSupportTeam(id);
     if (!supportTeam) throw new PolyHelperError('Could not find this support team?');
-    await interaction.followUp(supportTeam.getMessageData());
+    await interaction.followUp(supportTeam.toMessageData());
   }
 
   async executeEdit(interaction: InteractionWithGuild<ChatInputCommandInteraction>) {
@@ -67,7 +67,7 @@ class ManageSupportTeamsCommand extends DiscordCommand {
     const supportTeam = this.discord.application.database.getSupportTeam(id);
     if (!supportTeam) return await interaction.followUp({ content: "This support team doesn't exist" });
     await interaction.showModal(
-      SupportTeamPanel(supportTeam).setCustomId(`supportTeamModify:${id}`).setTitle('Editing a support team')
+      SupportTeamModal(supportTeam).setCustomId(`supportTeamModify:${id}`).setTitle('Editing a support team')
     );
   }
 
