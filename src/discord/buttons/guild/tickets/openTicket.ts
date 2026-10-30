@@ -48,7 +48,7 @@ class OpenTicketButton extends DiscordButton {
     const channel = await this.discord.application.discord.getSupportChannel();
     const auditLogReason = `Ticket opened by ${getUserDisplayName(interaction.user)}`;
     const thread = await channel.threads.create({
-      name: panel.parseTicketName({ user: interaction.user }),
+      name: panel.parseTicketName({ user: interaction.user, shouldReplaceVariables: true }),
       autoArchiveDuration: ThreadAutoArchiveDuration.OneWeek,
       type: ChannelType.PrivateThread,
       invitable: true,
