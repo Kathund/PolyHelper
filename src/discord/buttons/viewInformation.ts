@@ -1,4 +1,5 @@
 import BasicInteractionMetadata from '../private/interactions/basic/BasicInteractionMetadata.ts';
+
 import DiscordButton from '../private/interactions/DiscordButton.ts';
 import InformationCommand from '../commands/information.ts';
 import {
@@ -18,7 +19,7 @@ class ViewInformationButton extends DiscordButton {
     const [ownerId] = this.getArgs(interaction);
     const message: MessageEditOptions & InteractionReplyOptions = {
       components: InformationCommand.InformationComponent(interaction.user.id),
-      flags: MessageFlags.IsComponentsV2,
+      flags: MessageFlags.IsComponentsV2 | MessageFlags.Ephemeral,
       allowedMentions: { parse: [] }
     };
     if (ownerId === interaction.user.id) await interaction.update(message);

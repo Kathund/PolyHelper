@@ -33,12 +33,11 @@ class Ticket extends BaseParsedDatabaseItem<DatabaseTicket> {
   readonly pinMessageId: DatabaseTicket['pinMessageId'];
   readonly startingMessageId: DatabaseTicket['startingMessageId'];
   readonly openingTimestamp: DatabaseTicket['openingTimestamp'];
+  readonly lastMessageTimestamp: DatabaseTicket['lastMessageTimestamp'];
+  readonly inactivityNoticeId: DatabaseTicket['inactivityNoticeId'];
+  readonly inactivitySilenced: DatabaseTicket['inactivitySilenced'];
   readonly name: DatabaseTicket['name'];
   readonly #closed: DatabaseTicket['closed'];
-  readonly lastMessageTimestamp: DatabaseTicket['lastMessageTimestamp'];
-  readonly #lastMessageBySupport: DatabaseTicket['lastMessageBySupport'];
-  readonly inactivityAlerts: DatabaseTicket['inactivityAlerts'];
-  readonly lastAlertTimestamp: DatabaseTicket['lastAlertTimestamp'];
   constructor(
     data: DatabaseTicket,
     private readonly manager: DatabaseManager
@@ -51,12 +50,11 @@ class Ticket extends BaseParsedDatabaseItem<DatabaseTicket> {
     this.pinMessageId = data.pinMessageId;
     this.startingMessageId = data.startingMessageId;
     this.openingTimestamp = data.openingTimestamp;
+    this.lastMessageTimestamp = data.lastMessageTimestamp;
+    this.inactivityNoticeId = data.inactivityNoticeId;
+    this.inactivitySilenced = data.inactivitySilenced;
     this.name = data.name;
     this.#closed = data.closed;
-    this.lastMessageTimestamp = data.lastMessageTimestamp;
-    this.#lastMessageBySupport = data.lastMessageBySupport;
-    this.inactivityAlerts = data.inactivityAlerts;
-    this.lastAlertTimestamp = data.lastAlertTimestamp;
   }
 
   get pinned(): boolean {
@@ -65,42 +63,6 @@ class Ticket extends BaseParsedDatabaseItem<DatabaseTicket> {
 
   get closed(): boolean {
     return Boolean(this.#closed);
-  }
-
-  get lastMessageBySupport(): boolean {
-    return Boolean(this.#lastMessageBySupport);
-  }
-
-  get nextInactivityAlertAt(): number | null {
-    if (this.lastMessageTimestamp === null) return null;
-    const delays = [ms('1d'), ms('3d'), ms('7d')];
-    const delay = delays[Math.min(this.inactivityAlerts, delays.length - 1)] ?? ms('7d');
-    return (this.lastAlertTimestamp ?? this.lastMessageTimestamp) + delay;
-  }
-
-  recordMessage(message: Message, bySupport: boolean): Ticket {
-    return this.manager.updateTicketActivity(this.id, {
-      lastMessageTimestamp: message.createdTimestamp,
-      lastMessageBySupport: bySupport ? 1 : 0,
-      inactivityAlerts: 0,
-      lastAlertTimestamp: null
-    });
-  }
-
-  async sendInactivityAlert(): Promise<Ticket> {
-    const thread = await this.getThread();
-    const since = `<t:${Math.floor((this.lastMessageTimestamp ?? Date.now()) / 1000)}:R>`;
-    await thread.send({
-      content: this.lastMessageBySupport
-        ? `<@${this.owner}> Support is waiting on your reply. Last message was ${since}.`
-        : `<@&${this.panel.supportTeam?.ticketPingRole ?? 'MISSING'}> This ticket is waiting on a reply from support. Last message was ${since}.`
-    });
-    return this.manager.updateTicketActivity(this.id, {
-      lastMessageTimestamp: this.lastMessageTimestamp,
-      lastMessageBySupport: this.#lastMessageBySupport,
-      inactivityAlerts: this.inactivityAlerts + 1,
-      lastAlertTimestamp: Date.now()
-    });
   }
 
   get panel(): Panel {
@@ -130,6 +92,35 @@ class Ticket extends BaseParsedDatabaseItem<DatabaseTicket> {
     if (thread.lastMessage !== null) return thread.lastMessage;
     const messages = await thread.messages.fetch({ limit: 1 });
     return messages.first() ?? null;
+  }
+
+  async getInactivityMessage(): Promise<Message | null> {
+    if (!this.inactivityNoticeId) return null;
+    const thread = await this.getThread();
+    return await thread.messages.fetch(this.inactivityNoticeId).catch(() => null);
+  }
+
+  async sendInactivityNotice(): Promise<Ticket> {
+    const thread = await this.getThread();
+    if (!thread.sendable || thread.locked) return this;
+    if (thread.archived) await thread.setArchived(false, 'Sending a ticket inactivity reminder');
+
+    const supportRole = this.panel.supportTeam?.ticketPingRole ?? this.manager.application.config.discord.roles.support;
+    const message = await thread.send({
+      content: [
+        `This ticket appears to be inactive. <@&${supportRole}> <@${this.owner}>`,
+        this.lastMessageTimestamp === null
+          ? 'No messages have been sent yet.'
+          : `Last message was <t:${Math.floor(this.lastMessageTimestamp / 1000)}:R>`,
+        'Is this problem still occurring? Are there any updates we should know about?'
+      ].join('\n'),
+      components: [
+        new ActionRowBuilder<ButtonBuilder>().addComponents(
+          new ButtonBuilder().setLabel('Silence').setStyle(ButtonStyle.Secondary).setCustomId('silenceTicketInactivity')
+        )
+      ]
+    });
+    return this.manager.updateTicket({ ...this.toJSON(), inactivityNoticeId: message.id });
   }
 
   async refreshThread(): Promise<number | undefined> {
@@ -241,12 +232,6 @@ class Ticket extends BaseParsedDatabaseItem<DatabaseTicket> {
     if (closeRequest) await this.manager.deleteCloseRequest(closeRequest.id);
     await thread.setArchived(true, `Ticket closed by ${getUserDisplayName(executor)}`);
     this.manager.updateTicket({ ...updated.toJSON(), closed: 1 });
-    this.manager.updateTicketActivity(this.id, {
-      lastMessageTimestamp: null,
-      lastMessageBySupport: 0,
-      inactivityAlerts: 0,
-      lastAlertTimestamp: null
-    });
   }
 
   async open({ reason, executor }: TicketAction) {
@@ -442,12 +427,11 @@ class Ticket extends BaseParsedDatabaseItem<DatabaseTicket> {
       pinMessageId: this.pinMessageId,
       startingMessageId: this.startingMessageId,
       openingTimestamp: this.openingTimestamp,
-      name: this.name,
-      closed: this.#closed,
       lastMessageTimestamp: this.lastMessageTimestamp,
-      lastMessageBySupport: this.#lastMessageBySupport,
-      inactivityAlerts: this.inactivityAlerts,
-      lastAlertTimestamp: this.lastAlertTimestamp
+      inactivityNoticeId: this.inactivityNoticeId,
+      inactivitySilenced: this.inactivitySilenced,
+      name: this.name,
+      closed: this.#closed
     };
   }
 }

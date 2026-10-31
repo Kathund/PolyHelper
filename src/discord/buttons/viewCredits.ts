@@ -18,7 +18,7 @@ class ViewCreditsButton extends DiscordButton {
     const [ownerId] = this.getArgs(interaction);
     const message: MessageEditOptions & InteractionReplyOptions = {
       components: CreditsCommand.CreditsComponent(interaction.user.id),
-      flags: MessageFlags.IsComponentsV2,
+      flags: MessageFlags.IsComponentsV2 | MessageFlags.Ephemeral,
       allowedMentions: { parse: [] }
     };
     if (ownerId === interaction.user.id) await interaction.update(message);

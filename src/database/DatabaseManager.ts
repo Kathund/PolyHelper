@@ -11,7 +11,6 @@ import type {
   DatabasePanel,
   DatabaseSupportTeam,
   DatabaseTicket,
-  DatabaseTicketActivity,
   PanelSearchFilters,
   SupportTeamSearchFilters,
   TicketSearchFilters
@@ -126,18 +125,20 @@ class DatabaseManager extends BasicDatabaseManager {
           panelId: DatabaseTicket['panelId'] | null;
           owner: DatabaseTicket['owner'] | null;
           pinned: DatabaseTicket['closed'] | null;
+          inactivitySilenced: DatabaseTicket['inactivitySilenced'] | null;
           autoClose: DatabaseTicket['closed'] | null;
           closed: DatabaseTicket['closed'] | null;
           limit: number;
         },
         DatabaseTicket
       >(
-        'SELECT * FROM tickets WHERE (@panelId IS NULL OR panelId = @panelId) AND (@owner IS NULL OR owner = @owner) AND (@pinned IS NULL OR (pinMessageId IS NOT NULL) = @pinned) AND (@autoClose IS NULL OR EXISTS (SELECT 1 FROM closeRequests WHERE closeRequests.ticketId = tickets.id AND closeRequests.autoClose IS NOT NULL) = @autoClose) AND (@closed IS NULL OR closed = @closed) LIMIT @limit'
+        'SELECT * FROM tickets WHERE (@panelId IS NULL OR panelId = @panelId) AND (@owner IS NULL OR owner = @owner) AND (@pinned IS NULL OR (pinMessageId IS NOT NULL) = @pinned) AND (@inactivitySilenced IS NULL OR inactivitySilenced = @inactivitySilenced) AND (@autoClose IS NULL OR EXISTS (SELECT 1 FROM closeRequests WHERE closeRequests.ticketId = tickets.id AND closeRequests.autoClose IS NOT NULL) = @autoClose) AND (@closed IS NULL OR closed = @closed) LIMIT @limit'
       )
       .all({
         panelId: filters.panelId ?? null,
         owner: filters.owner ?? null,
         pinned: filters.pinned === undefined ? null : filters.pinned ? 1 : 0,
+        inactivitySilenced: filters.silenced === undefined ? null : filters.silenced ? 1 : 0,
         autoClose: filters.autoClose === undefined ? null : filters.autoClose ? 1 : 0,
         closed: filters.closed ?? null,
         limit: filters.limit ?? -1
@@ -157,7 +158,7 @@ class DatabaseManager extends BasicDatabaseManager {
     const id: DatabaseTicket['id'] = crypto.randomUUID();
     this.db
       .prepare<DatabaseTicket>(
-        'INSERT INTO tickets (id, panelId, threadId, owner, pinMessageId, startingMessageId, openingTimestamp, name, closed, lastMessageTimestamp, lastMessageBySupport, inactivityAlerts, lastAlertTimestamp) VALUES (@id, @panelId, @threadId, @owner, @pinMessageId, @startingMessageId, @openingTimestamp, @name, @closed, @lastMessageTimestamp, @lastMessageBySupport, @inactivityAlerts, @lastAlertTimestamp)'
+        'INSERT INTO tickets (id, panelId, threadId, owner, pinMessageId, startingMessageId, openingTimestamp, lastMessageTimestamp, inactivityNoticeId, inactivitySilenced, name, closed) VALUES (@id, @panelId, @threadId, @owner, @pinMessageId, @startingMessageId, @openingTimestamp, @lastMessageTimestamp, @inactivityNoticeId, @inactivitySilenced, @name, @closed)'
       )
       .run({ ...ticketData, id });
     return new Ticket({ ...ticketData, id }, this);
@@ -166,22 +167,11 @@ class DatabaseManager extends BasicDatabaseManager {
   updateTicket(data: DatabaseTicket): Ticket {
     const update = this.db
       .prepare<DatabaseTicket>(
-        'UPDATE tickets SET panelId = @panelId, threadId = @threadId, owner = @owner, pinMessageId = @pinMessageId, startingMessageId = @startingMessageId, openingTimestamp = @openingTimestamp, name = @name, closed = @closed WHERE id = @id'
+        'UPDATE tickets SET panelId = @panelId, threadId = @threadId, owner = @owner, pinMessageId = @pinMessageId, startingMessageId = @startingMessageId, openingTimestamp = @openingTimestamp, lastMessageTimestamp = @lastMessageTimestamp, inactivityNoticeId = @inactivityNoticeId, inactivitySilenced = @inactivitySilenced, name = @name, closed = @closed WHERE id = @id'
       )
       .run(data);
     if (update.changes === 0) throw new PolyHelperError('Could not find this ticket?');
     return new Ticket(data, this);
-  }
-
-  updateTicketActivity(id: DatabaseTicket['id'], activity: DatabaseTicketActivity): Ticket {
-    this.db
-      .prepare<DatabaseTicketActivity & Pick<DatabaseTicket, 'id'>>(
-        'UPDATE tickets SET lastMessageTimestamp = @lastMessageTimestamp, lastMessageBySupport = @lastMessageBySupport, inactivityAlerts = @inactivityAlerts, lastAlertTimestamp = @lastAlertTimestamp WHERE id = @id'
-      )
-      .run({ ...activity, id });
-    const ticket = this.getTicket(id);
-    if (!ticket) throw new PolyHelperError('Could not find this ticket?');
-    return ticket;
   }
 
   getCloseRequest(id: DatabaseCloseRequest['id']): CloseRequest | undefined {

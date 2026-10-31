@@ -53,23 +53,19 @@ export const DatabaseTicket = zod.object({
   pinMessageId: zod.string().nullable(),
   startingMessageId: zod.string(),
   openingTimestamp: zod.int().positive(),
-  name: zod.string(),
-  closed: DatabaseBoolean,
   lastMessageTimestamp: zod.int().positive().nullable(),
-  lastMessageBySupport: DatabaseBoolean,
-  inactivityAlerts: zod.int().nonnegative(),
-  lastAlertTimestamp: zod.int().positive().nullable()
+  inactivityNoticeId: zod.string().nullable(),
+  inactivitySilenced: DatabaseBoolean,
+  name: zod.string(),
+  closed: DatabaseBoolean
 });
 export type DatabaseTicket = zod.infer<typeof DatabaseTicket>;
-export type DatabaseTicketActivity = Pick<
-  DatabaseTicket,
-  'lastMessageTimestamp' | 'lastMessageBySupport' | 'inactivityAlerts' | 'lastAlertTimestamp'
->;
 
 export interface TicketSearchFilters extends DatabaseSearchFilters {
   panelId?: DatabaseTicket['panelId'];
   owner?: DatabaseTicket['owner'];
   pinned?: boolean;
+  silenced?: boolean;
   closed?: DatabaseTicket['closed'];
   autoClose?: boolean;
 }
