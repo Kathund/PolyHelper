@@ -138,9 +138,9 @@ class DatabaseManager extends BasicDatabaseManager {
         panelId: filters.panelId ?? null,
         owner: filters.owner ?? null,
         pinned: filters.pinned === undefined ? null : filters.pinned ? 1 : 0,
-        inactivitySilenced: filters.silenced === undefined ? null : filters.silenced ? 1 : 0,
+        inactivitySilenced: filters.inactivitySilenced === undefined ? null : filters.inactivitySilenced ? 1 : 0,
         autoClose: filters.autoClose === undefined ? null : filters.autoClose ? 1 : 0,
-        closed: filters.closed ?? null,
+        closed: filters.closed === undefined ? null : filters.closed ? 1 : 0,
         limit: filters.limit ?? -1
       })
       .map((data) => new Ticket(data, this));

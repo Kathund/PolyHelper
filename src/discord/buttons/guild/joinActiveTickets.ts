@@ -18,13 +18,12 @@ class JoinActiveTicketsButton extends DiscordButton {
   override async execute(interaction: InteractionWithGuild<ButtonInteraction>) {
     const tickets = this.discord.application.database
       .getPanels({ enabled: true })
-      .flatMap((panel) => panel.getTickets({ closed: 0 }));
+      .flatMap((panel) => panel.getTickets({ closed: false }));
     await interaction.followUp({
       embeds: [new EmbedHelper().setDescription(`Adding you to ${tickets.length} ticket(s)`)]
     });
     for (const ticket of tickets) {
-      const thread = await ticket.getThread();
-      await thread.members.add(interaction.user.id);
+      await ticket.addUser({ user: interaction.user, executor: interaction.user, silent: true });
     }
     await interaction.editReply({
       embeds: [new SuccessEmbed().setDescription(`Added you to ${tickets.length} ticket(s)`)]

@@ -1,5 +1,6 @@
 import type { ChalkInstance } from 'chalk';
 import type { PartialUser, User } from 'discord.js';
+import type { TicketSearchFilters } from './database.ts';
 
 declare global {
   export interface Console {
@@ -20,13 +21,6 @@ export interface TicketAction {
   executor: User | PartialUser;
 }
 
-export interface TicketSearch {
-  panelId?: string;
-  pinned?: boolean;
-  unpinned?: boolean;
-  closed?: boolean;
-  open?: boolean;
-  owner?: string;
-}
+export type TicketSearch = Omit<TicketSearchFilters, 'limit' | 'autoClose'>;
 
 export type TemplatePrimitive = string | number | boolean | null | undefined;

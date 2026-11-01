@@ -65,8 +65,8 @@ export interface TicketSearchFilters extends DatabaseSearchFilters {
   panelId?: DatabaseTicket['panelId'];
   owner?: DatabaseTicket['owner'];
   pinned?: boolean;
-  silenced?: boolean;
-  closed?: DatabaseTicket['closed'];
+  inactivitySilenced?: boolean;
+  closed?: boolean;
   autoClose?: boolean;
 }
 

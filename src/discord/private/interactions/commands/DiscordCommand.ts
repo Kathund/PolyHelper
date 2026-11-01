@@ -26,7 +26,7 @@ abstract class DiscordCommand extends BasicInteractionData<ChatInputCommandInter
           .map((ticket) => ticket.toAutocompleteOption());
       case 'closed-ticket-id':
         return this.discord.application.database
-          .getTickets({ closed: 1, limit: 25 })
+          .getTickets({ closed: true, limit: 25 })
           .map((ticket) => ticket.toAutocompleteOption());
       case 'panel-id':
         return this.discord.application.database.getPanels({ limit: 25 }).map((panel) => panel.toAutocompleteOption());

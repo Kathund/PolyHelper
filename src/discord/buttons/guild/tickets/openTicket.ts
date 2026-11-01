@@ -22,7 +22,7 @@ class OpenTicketButton extends DiscordButton {
     const tickets = this.discord.application.database.getTickets({
       panelId: panel.id,
       owner: interaction.user.id,
-      closed: 0
+      closed: false
     });
     if (tickets.length >= panel.maxOpenTickets) {
       for (const ticket of tickets) {

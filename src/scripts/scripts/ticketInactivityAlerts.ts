@@ -11,7 +11,11 @@ class TicketInactivityAlertsScript extends BasicScript {
 
   override async execute() {
     const now = Date.now();
-    const tickets = this.scripts.application.database.getTickets({ closed: 0, pinned: false, silenced: false });
+    const tickets = this.scripts.application.database.getTickets({
+      closed: false,
+      pinned: false,
+      inactivitySilenced: false
+    });
     for (const ticket of tickets) {
       try {
         if (ticket.lastMessageTimestamp === null) {

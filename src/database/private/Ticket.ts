@@ -35,7 +35,7 @@ class Ticket extends BaseParsedDatabaseItem<DatabaseTicket> {
   readonly openingTimestamp: DatabaseTicket['openingTimestamp'];
   readonly lastMessageTimestamp: DatabaseTicket['lastMessageTimestamp'];
   readonly inactivityNoticeId: DatabaseTicket['inactivityNoticeId'];
-  readonly inactivitySilenced: DatabaseTicket['inactivitySilenced'];
+  readonly #inactivitySilenced: DatabaseTicket['inactivitySilenced'];
   readonly name: DatabaseTicket['name'];
   readonly #closed: DatabaseTicket['closed'];
   constructor(
@@ -52,13 +52,17 @@ class Ticket extends BaseParsedDatabaseItem<DatabaseTicket> {
     this.openingTimestamp = data.openingTimestamp;
     this.lastMessageTimestamp = data.lastMessageTimestamp;
     this.inactivityNoticeId = data.inactivityNoticeId;
-    this.inactivitySilenced = data.inactivitySilenced;
+    this.#inactivitySilenced = data.inactivitySilenced;
     this.name = data.name;
     this.#closed = data.closed;
   }
 
   get pinned(): boolean {
     return this.pinMessageId !== null;
+  }
+
+  get inactivitySilenced(): boolean {
+    return Boolean(this.#inactivitySilenced);
   }
 
   get closed(): boolean {
@@ -276,24 +280,28 @@ class Ticket extends BaseParsedDatabaseItem<DatabaseTicket> {
     return await this.manager.updateTicket({ ...this.toJSON(), pinMessageId: null }).rename({ executor, silent: true });
   }
 
-  async addUser({ reason, executor, user }: TicketAction & { user: User }): Promise<Ticket> {
+  async addUser({ reason, executor, user, silent }: TicketAction & { user: User; silent?: boolean }): Promise<Ticket> {
+    if (this.closed) throw new PolyHelperError('You cannot add a user to a closed ticket');
     const thread = await this.getThread();
     await thread.members.add(user);
-    await thread.send({
-      embeds: [
-        new TicketActionEmbed({
-          title: 'Added to ticket',
-          fullTitleReplace: true,
-          description: `${getMention(user)} was added to the ticket by ${getMention(executor)}`,
-          reason,
-          executor
-        })
-      ]
-    });
+    if (silent !== true) {
+      await thread.send({
+        embeds: [
+          new TicketActionEmbed({
+            title: 'Added to ticket',
+            fullTitleReplace: true,
+            description: `${getMention(user)} was added to the ticket by ${getMention(executor)}`,
+            reason,
+            executor
+          })
+        ]
+      });
+    }
     return this;
   }
 
   async removeUser({ reason, executor, user }: TicketAction & { user: GuildMember }): Promise<Ticket> {
+    if (this.closed) throw new PolyHelperError('You cannot remove a user to a closed ticket');
     if (this.owner === user.id) throw new PolyHelperError('You cannot remove the ticket owner from the ticket');
     const isSupportTeam = await isSupportMember(user);
     if (isSupportTeam) throw new PolyHelperError('You cannot remove a support member from a ticket');
@@ -338,7 +346,8 @@ class Ticket extends BaseParsedDatabaseItem<DatabaseTicket> {
     embed.addFields({ name: '_ _', value: 'Please accept or deny using the buttons below.' });
     const id = crypto.randomUUID();
     const thread = await this.getThread();
-    const user = await this.getDiscord();
+    const user = await this.getDiscord().catch(() => null);
+    if (user === null) throw new PolyHelperError('Could not fetch the ticket owner. They most likely have left');
     const message = await thread.send({
       content: `Hey <@${user.user.id}>`,
       embeds: [embed],
@@ -364,8 +373,9 @@ class Ticket extends BaseParsedDatabaseItem<DatabaseTicket> {
         { name: 'Thread', value: `<#${this.threadId}>` },
         { name: 'Open Timestamp', value: Math.floor(this.openingTimestamp / 1000), format: 'Timestamp' },
         { name: 'Ticket Owner', value: this.owner, format: 'Discord User' },
-        { name: 'Is Closed', value: this.closed, format: 'Boolean' },
-        { name: 'Is Pinned', value: this.pinned, format: 'Boolean' }
+        { name: 'Is Closed', value: this.closed, format: 'Boolean', inline: true },
+        { name: 'Is Pinned', value: this.pinned, format: 'Boolean', inline: true },
+        { name: 'Is Silenced', value: this.inactivitySilenced, format: 'Boolean', inline: true }
       );
   }
 
@@ -429,7 +439,7 @@ class Ticket extends BaseParsedDatabaseItem<DatabaseTicket> {
       openingTimestamp: this.openingTimestamp,
       lastMessageTimestamp: this.lastMessageTimestamp,
       inactivityNoticeId: this.inactivityNoticeId,
-      inactivitySilenced: this.inactivitySilenced,
+      inactivitySilenced: this.#inactivitySilenced,
       name: this.name,
       closed: this.#closed
     };

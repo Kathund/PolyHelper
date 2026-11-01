@@ -63,6 +63,18 @@ abstract class DiscordModal extends BasicInteractionData<ModalSubmitInteraction>
   protected getStringSelectValue(interaction: ModalSubmitInteraction, customId: string): string | undefined {
     return this.getStringSelectValues(interaction, customId)[0];
   }
+
+  protected getSelectedUsers(interaction: ModalSubmitInteraction, customId: string): string[] {
+    try {
+      return interaction.fields.getSelectedUsers(customId, true).map((user) => user.id);
+    } catch {
+      return [];
+    }
+  }
+
+  protected getSelectedUser(interaction: ModalSubmitInteraction, customId: string): string | undefined {
+    return this.getSelectedUsers(interaction, customId)[0];
+  }
 }
 
 export default DiscordModal;

@@ -6,7 +6,7 @@ import type { StringSelectMenuInteraction } from 'discord.js';
 
 class TicketSearchSelector extends DiscordStringSelectMenu {
   override readonly metadata: BasicInteractionMetadata = new BasicInteractionMetadata('ticketsSearch')
-    .setResponse(InteractionResponse.None)
+    .setResponse(InteractionResponse.Ephemeral)
     .setFetchGuildMember(false);
 
   override async execute(interaction: StringSelectMenuInteraction) {
@@ -14,9 +14,7 @@ class TicketSearchSelector extends DiscordStringSelectMenu {
     if (!ticketId) throw new PolyHelperError('Could not find the a ticket id');
     const ticket = this.discord.application.database.getTicket(ticketId);
     if (!ticket) throw new PolyHelperError('Could not find the matching ticket?');
-    const [ownerId] = this.getArgs(interaction);
-    if (ownerId === interaction.user.id) await interaction.update(await ticket.toMessageData());
-    else await interaction.reply(await ticket.toMessageData());
+    await interaction.followUp(await ticket.toMessageData());
   }
 }
 

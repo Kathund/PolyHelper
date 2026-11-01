@@ -1,6 +1,10 @@
+import Application from '../../Application.ts';
+import EmbedHelper from './EmbedHelper.ts';
 import PolyHelperError from '../../private/error.ts';
 import config from '../../../config.json' with { type: 'json' };
 import {
+  ActionRowBuilder,
+  type BaseMessageOptions,
   ButtonBuilder,
   ButtonStyle,
   CheckboxBuilder,
@@ -16,13 +20,16 @@ import {
   StringSelectMenuOptionBuilder,
   TextDisplayBuilder,
   TextInputBuilder,
-  TextInputStyle
+  TextInputStyle,
+  UserSelectMenuBuilder
 } from 'discord.js';
 import { ConfigDiscordEmbedsColors } from '../../types/config.ts';
 import { hexToRgb } from '../../utils/miscUtils.ts';
 import type Panel from '../../database/private/Panel.ts';
 import type SupportTeam from '../../database/private/SupportTeam.ts';
+import type Ticket from '../../database/private/Ticket.ts';
 import type { DatabaseCloseRequest, DatabasePanel, DatabaseSupportTeam } from '../../types/database.ts';
+import type { TicketSearch } from '../../types/misc.ts';
 
 export class PatchedContainerBuilder extends ContainerBuilder {
   constructor() {
@@ -117,6 +124,20 @@ export function BasicPanelModal(panel?: Panel | DatabasePanel) {
   );
 }
 
+export function SupportTeamStringSelectMenu(
+  supportTeams: DatabaseSupportTeam[] | SupportTeam[],
+  supportTeam?: DatabaseSupportTeam['id']
+): StringSelectMenuBuilder {
+  return new StringSelectMenuBuilder().setOptions(
+    supportTeams.map((team) =>
+      new StringSelectMenuOptionBuilder()
+        .setLabel(team.name)
+        .setValue(team.id)
+        .setDefault(supportTeam === team.id)
+    )
+  );
+}
+
 export function SupportTeamPanelModal(
   supportTeams: DatabaseSupportTeam[] | SupportTeam[],
   panel?: Panel | DatabasePanel
@@ -128,16 +149,8 @@ export function SupportTeamPanelModal(
   }
   return new ModalBuilder().addLabelComponents(
     new LabelBuilder().setLabel('Support Team').setStringSelectMenuComponent(
-      new StringSelectMenuBuilder()
+      SupportTeamStringSelectMenu(supportTeams, panel?.supportTeamId ?? undefined)
         .setCustomId('supportTeamId')
-        .setOptions(
-          supportTeams.map((team) =>
-            new StringSelectMenuOptionBuilder()
-              .setLabel(team.name)
-              .setValue(team.id)
-              .setDefault(panel?.supportTeamId === team.id)
-          )
-        )
         .setMinValues(1)
         .setMaxValues(1)
     ),
@@ -198,9 +211,9 @@ export function TicketOpenOptionsPanelModal(panel?: Panel | DatabasePanel) {
           '## Variables',
           '',
           "- `{panelName}` - Ticket Panel's name",
-          "- `{mention}` - Ticket Opener's mention",
-          "- `{username}` - Ticket Opener's username",
-          "- `{id}` - Ticket Opener's id"
+          "- `{mention}` - Ticket Owner's mention",
+          "- `{username}` - Ticket Owner's username",
+          "- `{id}` - Ticket Owner's id"
         ].join('\n')
       )
     )
@@ -279,4 +292,138 @@ export function SupportTeamModal(supportTeam?: SupportTeam | DatabaseSupportTeam
         .setDefaultRoles(...(supportTeam?.ticketPingRole ? [supportTeam.ticketPingRole] : []))
     )
   );
+}
+
+export function PanelStringSelectMenu(
+  panels: DatabasePanel[] | Panel[],
+  currentPanel?: DatabasePanel['id']
+): StringSelectMenuBuilder {
+  return new StringSelectMenuBuilder().setOptions(
+    panels.map((panel) =>
+      new StringSelectMenuOptionBuilder()
+        .setLabel(panel.name)
+        .setValue(panel.id)
+        .setDefault(currentPanel === panel.id)
+    )
+  );
+}
+
+export function TicketSearchFilterModal(search: TicketSearch, panels: DatabasePanel[] | Panel[]): ModalBuilder {
+  return new ModalBuilder().addLabelComponents(
+    new LabelBuilder()
+      .setLabel('Panel')
+      .setStringSelectMenuComponent(
+        PanelStringSelectMenu(panels, search.panelId)
+          .setCustomId('panelId')
+          .setMinValues(1)
+          .setMaxValues(1)
+          .setRequired(false)
+      ),
+    new LabelBuilder().setLabel('Owner').setUserSelectMenuComponent(
+      new UserSelectMenuBuilder()
+        .setCustomId('owner')
+        .setDefaultUsers(search.owner !== undefined ? [search.owner] : [])
+        .setMaxValues(1)
+        .setMinValues(1)
+        .setRequired(false)
+    ),
+    new LabelBuilder().setLabel('Pin State').setRadioGroupComponent(
+      new RadioGroupBuilder().setCustomId('pinned').setOptions(
+        new RadioGroupOptionBuilder()
+          .setLabel('Any')
+          .setValue('any')
+          .setDefault(search.pinned === undefined),
+        new RadioGroupOptionBuilder()
+          .setLabel('Pinned')
+          .setValue('true')
+          .setDefault(search.pinned === true),
+        new RadioGroupOptionBuilder()
+          .setLabel('Unpinned')
+          .setValue('false')
+          .setDefault(search.pinned === false)
+      )
+    ),
+    new LabelBuilder().setLabel('Ticket State').setRadioGroupComponent(
+      new RadioGroupBuilder().setCustomId('closed').setOptions(
+        new RadioGroupOptionBuilder()
+          .setLabel('Any')
+          .setValue('any')
+          .setDefault(search.closed === undefined),
+        new RadioGroupOptionBuilder()
+          .setLabel('Open')
+          .setValue('false')
+          .setDefault(search.closed === false),
+        new RadioGroupOptionBuilder()
+          .setLabel('Closed')
+          .setValue('true')
+          .setDefault(search.closed === true)
+      )
+    ),
+    new LabelBuilder().setLabel('Inactivity State').setRadioGroupComponent(
+      new RadioGroupBuilder().setCustomId('inactivitySilenced').setOptions(
+        new RadioGroupOptionBuilder()
+          .setLabel('Any')
+          .setValue('any')
+          .setDefault(search.inactivitySilenced === undefined),
+        new RadioGroupOptionBuilder()
+          .setLabel('Silenced')
+          .setValue('true')
+          .setDefault(search.inactivitySilenced === true),
+        new RadioGroupOptionBuilder()
+          .setLabel('Unsilenced')
+          .setValue('false')
+          .setDefault(search.inactivitySilenced === false)
+      )
+    )
+  );
+}
+
+export function TicketSearchResults(tickets: Ticket[], search: TicketSearch): BaseMessageOptions {
+  const embed = new EmbedHelper()
+    .setTitle('Ticket Search')
+    .setDescription(`Found **${tickets.length} ticket(s)** with the following filter(s)`);
+  const searchId = crypto.randomUUID();
+  Application.cache.set<TicketSearch>(`ticket:search:${searchId}`, search);
+
+  if (search.pinned !== undefined) {
+    embed.addFields({ name: 'Pin State', value: search.pinned ? 'Pinned' : 'Unpinned' });
+  }
+  if (search.closed !== undefined) embed.addFields({ name: 'State', value: search.closed ? 'Closed' : 'Open' });
+  if (search.inactivitySilenced !== undefined) {
+    embed.addFields({ name: 'Inactivity State', value: search.inactivitySilenced ? 'Silenced' : 'Unsilenced' });
+  }
+  if (search.panelId) embed.addFields({ name: 'Panel Id', value: search.panelId, format: 'Block' });
+  if (search.owner) embed.addFields({ name: 'Owner', value: `<@${search.owner}> (${search.owner})` });
+
+  return {
+    embeds: [embed],
+    components: [
+      new ActionRowBuilder<StringSelectMenuBuilder>().setComponents(
+        new StringSelectMenuBuilder()
+          .setCustomId('ticketsSearch')
+          .setPlaceholder(tickets.length === 0 ? 'No tickets found' : 'Select a ticket to view more')
+          .setDisabled(tickets.length === 0)
+          .setOptions(
+            tickets.length === 0
+              ? [new StringSelectMenuOptionBuilder().setLabel('No tickets found').setValue('nothing')]
+              : tickets.map((ticket) =>
+                  new StringSelectMenuOptionBuilder()
+                    .setLabel(`${ticket.name} - ${new Date(ticket.openingTimestamp).toISOString().split('T')[0]}`)
+                    .setValue(ticket.id)
+                )
+          )
+      ),
+      new ActionRowBuilder<ButtonBuilder>().setComponents(
+        new ButtonBuilder()
+          .setCustomId(`ticketSearchFilter:${searchId}`)
+          .setLabel('Edit Filters')
+          .setStyle(ButtonStyle.Secondary),
+        new ButtonBuilder()
+          .setCustomId('joinTickets')
+          .setLabel('Join Found Ticket Threads')
+          .setStyle(ButtonStyle.Secondary)
+          .setDisabled(tickets.length === 0)
+      )
+    ]
+  };
 }

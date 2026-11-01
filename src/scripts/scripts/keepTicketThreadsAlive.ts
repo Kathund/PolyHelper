@@ -11,7 +11,7 @@ class KeepTicketThreadsAliveScript extends BasicScript {
   }
 
   override async execute() {
-    const openTickets = this.scripts.application.database.getTickets({ closed: 0 });
+    const openTickets = this.scripts.application.database.getTickets({ closed: false });
 
     for (const ticket of openTickets) {
       try {

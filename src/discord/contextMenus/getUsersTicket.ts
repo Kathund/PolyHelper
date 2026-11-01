@@ -1,6 +1,5 @@
 import DiscordContextMenu from '../private/interactions/contextMenus/DiscordContextMenu.ts';
 import DiscordContextMenuMetadata from '../private/interactions/contextMenus/DiscordContextMenuMetadata.ts';
-import TicketsCommand from '../commands/guild/tickets/tickets.ts';
 import { ApplicationCommandType, type ContextMenuCommandType } from 'discord.js';
 import {
   InteractionFlag,
@@ -8,6 +7,7 @@ import {
   type InteractionWithGuild,
   type MessageAndUserContextMenuInteraction
 } from '../../types/discord.ts';
+import { TicketSearchResults } from '../private/ComponentHelper.ts';
 
 class GetUsersTicketContextMenu extends DiscordContextMenu<MessageAndUserContextMenuInteraction> {
   private createMetadata(type: ContextMenuCommandType): DiscordContextMenuMetadata {
@@ -27,9 +27,7 @@ class GetUsersTicketContextMenu extends DiscordContextMenu<MessageAndUserContext
         ? interaction.targetMessage.author.id
         : interaction.targetUser.id;
     const tickets = this.discord.application.database.getTickets({ owner: ownerId, limit: 25 });
-    await interaction.followUp(
-      TicketsCommand.getTicketsSearchMessageData(tickets, { owner: ownerId }, interaction.user.id)
-    );
+    await interaction.followUp(TicketSearchResults(tickets, { owner: ownerId }));
   }
 }
 
