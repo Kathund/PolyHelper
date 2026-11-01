@@ -4,7 +4,7 @@ import { toError } from '../../utils/miscUtils.ts';
 import type ScriptManager from '../ScriptManager.ts';
 
 class TicketInactivityAlertsScript extends BasicScript {
-  private readonly inactivityThreshold = ms('2m');
+  private readonly inactivityThreshold = ms('1d');
   constructor(scripts: ScriptManager) {
     super(scripts, { id: 'ticketInactivityAlerts', interval: '1m' });
   }
@@ -14,7 +14,15 @@ class TicketInactivityAlertsScript extends BasicScript {
     const tickets = this.scripts.application.database.getTickets({ closed: 0, pinned: false, silenced: false });
     for (const ticket of tickets) {
       try {
-        if (ticket.lastMessageTimestamp === null || now - ticket.lastMessageTimestamp < this.inactivityThreshold) continue;
+        if (ticket.lastMessageTimestamp === null) {
+          const lastMessage = await ticket.getLastMessageInTicket();
+          this.scripts.application.database.updateTicket({
+            ...ticket.toJSON(),
+            lastMessageTimestamp: lastMessage?.createdTimestamp ?? null
+          });
+          continue;
+        }
+        if (now - ticket.lastMessageTimestamp < this.inactivityThreshold) continue;
         const inactivity = await ticket.getInactivityMessage();
         if (inactivity) continue;
         await ticket.sendInactivityNotice();
