@@ -83,7 +83,7 @@ class TicketsCommand extends DiscordCommand {
   }
 
   static getTicketsOverviewMessageData(panels: Panel[]): BaseMessageOptions {
-    const parsedPanels = panels.map((panel) => panel.getOverviewFields());
+    const parsedPanels = panels.sort((a, b) => a.name.localeCompare(b.name)).map((panel) => panel.getOverviewFields());
     return {
       embeds: [
         new EmbedHelper()
