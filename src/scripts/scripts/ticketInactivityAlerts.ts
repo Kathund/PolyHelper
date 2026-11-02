@@ -6,7 +6,7 @@ import type ScriptManager from '../ScriptManager.ts';
 class TicketInactivityAlertsScript extends BasicScript {
   private readonly inactivityThreshold = ms('1d');
   constructor(scripts: ScriptManager) {
-    super(scripts, { id: 'ticketInactivityAlerts' });
+    super(scripts, { id: 'ticketInactivityAlerts', interval: '1m' });
   }
 
   override async execute() {
