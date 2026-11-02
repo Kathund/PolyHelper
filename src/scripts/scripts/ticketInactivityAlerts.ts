@@ -14,7 +14,9 @@ class TicketInactivityAlertsScript extends BasicScript {
     const tickets = this.scripts.application.database.getTickets({
       closed: false,
       pinned: false,
-      inactivitySilenced: false
+      inactivitySilenced: false,
+      sort: 'LastMessageTimestamp',
+      sortDirection: 'ASC'
     });
     for (const ticket of tickets) {
       try {

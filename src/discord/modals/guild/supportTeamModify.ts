@@ -1,7 +1,7 @@
 import BasicInteractionMetadata from '../../private/interactions/basic/BasicInteractionMetadata.ts';
 import DiscordModal from '../../private/interactions/DiscordModal.ts';
 import { InteractionFlag, InteractionResponse, type InteractionWithGuild } from '../../../types/discord.ts';
-import type { DatabaseSupportTeam } from '../../../types/database.ts';
+import type { BaseDatabaseItem, DatabaseSupportTeam } from '../../../types/database.ts';
 import type { ModalMessageModalSubmitInteraction } from 'discord.js';
 
 class SupportTeamModifyModal extends DiscordModal {
@@ -10,7 +10,7 @@ class SupportTeamModifyModal extends DiscordModal {
     .setResponse(InteractionResponse.Ephemeral);
 
   override async execute(interaction: InteractionWithGuild<ModalMessageModalSubmitInteraction>) {
-    const data: Omit<DatabaseSupportTeam, 'id'> = {
+    const data: Omit<DatabaseSupportTeam, keyof BaseDatabaseItem> = {
       name: interaction.fields.getTextInputValue('name'),
       supportRole: this.getSelectedRole(interaction, 'supportRole'),
       ticketPingRole: this.getSelectedRole(interaction, 'ticketPingRole')

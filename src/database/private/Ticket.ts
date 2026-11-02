@@ -26,7 +26,6 @@ import type { DatabaseCloseRequest, DatabaseTicket } from '../../types/database.
 import type { TicketAction } from '../../types/misc.ts';
 
 class Ticket extends BaseParsedDatabaseItem<DatabaseTicket> {
-  readonly id: DatabaseTicket['id'];
   readonly panelId: DatabaseTicket['panelId'];
   readonly threadId: DatabaseTicket['threadId'];
   readonly owner: DatabaseTicket['owner'];
@@ -42,8 +41,7 @@ class Ticket extends BaseParsedDatabaseItem<DatabaseTicket> {
     data: DatabaseTicket,
     private readonly manager: DatabaseManager
   ) {
-    super();
-    this.id = data.id;
+    super(data);
     this.panelId = data.panelId;
     this.threadId = data.threadId;
     this.owner = data.owner;
@@ -364,15 +362,14 @@ class Ticket extends BaseParsedDatabaseItem<DatabaseTicket> {
   }
 
   override toEmbed(): EmbedHelper {
-    return new EmbedHelper()
-      .setStyle('DataInfo')
+    return super
+      .toEmbed()
       .setTitle('Showing Ticket Data')
       .addFields(
-        { name: 'ID', value: this.id, format: 'Block' },
         { name: 'Panel ID', value: this.panelId, format: 'Block' },
         { name: 'Thread', value: `<#${this.threadId}>` },
-        { name: 'Open Timestamp', value: Math.floor(this.openingTimestamp / 1000), format: 'Timestamp' },
-        { name: 'Ticket Owner', value: this.owner, format: 'Discord User' },
+        { name: 'Opend', value: Math.floor(this.openingTimestamp / 1000), format: 'Timestamp' },
+        { name: 'Owner', value: this.owner, format: 'Discord User' },
         { name: 'Is Closed', value: this.closed, format: 'Boolean', inline: true },
         { name: 'Is Pinned', value: this.pinned, format: 'Boolean', inline: true },
         { name: 'Is Silenced', value: this.inactivitySilenced, format: 'Boolean', inline: true }
@@ -431,6 +428,7 @@ class Ticket extends BaseParsedDatabaseItem<DatabaseTicket> {
   override toJSON(): DatabaseTicket {
     return {
       id: this.id,
+      lastUpdated: this.lastUpdated,
       panelId: this.panelId,
       threadId: this.threadId,
       owner: this.owner,

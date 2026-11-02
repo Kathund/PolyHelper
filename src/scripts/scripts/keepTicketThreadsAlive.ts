@@ -11,7 +11,11 @@ class KeepTicketThreadsAliveScript extends BasicScript {
   }
 
   override async execute() {
-    const openTickets = this.scripts.application.database.getTickets({ closed: false });
+    const openTickets = this.scripts.application.database.getTickets({
+      closed: false,
+      sort: 'LastUpdated',
+      sortDirection: 'ASC'
+    });
 
     for (const ticket of openTickets) {
       try {

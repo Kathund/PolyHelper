@@ -1,14 +1,13 @@
 import BaseParsedDatabaseItem from './BaseParsedDatabaseItem.ts';
-import EmbedHelper from '../../discord/private/EmbedHelper.ts';
 import PolyHelperError from '../../private/error.ts';
 import { ActionRowBuilder, type BaseMessageOptions, ButtonBuilder, ButtonStyle, type Role } from 'discord.js';
 import type DatabaseManager from '../DatabaseManager.ts';
+import type EmbedHelper from '../../discord/private/EmbedHelper.ts';
 import type Panel from './Panel.ts';
 import type { AutocompleteOption } from '../../types/discord.ts';
 import type { DatabaseSupportTeam } from '../../types/database.ts';
 
 class SupportTeam extends BaseParsedDatabaseItem<DatabaseSupportTeam> {
-  readonly id: DatabaseSupportTeam['id'];
   readonly name: DatabaseSupportTeam['name'];
   readonly supportRole: DatabaseSupportTeam['supportRole'];
   readonly ticketPingRole: DatabaseSupportTeam['ticketPingRole'];
@@ -16,8 +15,7 @@ class SupportTeam extends BaseParsedDatabaseItem<DatabaseSupportTeam> {
     data: DatabaseSupportTeam,
     private readonly manager: DatabaseManager
   ) {
-    super();
-    this.id = data.id;
+    super(data);
     this.name = data.name;
     this.supportRole = data.supportRole;
     this.ticketPingRole = data.ticketPingRole;
@@ -50,11 +48,10 @@ class SupportTeam extends BaseParsedDatabaseItem<DatabaseSupportTeam> {
   }
 
   override toEmbed(): EmbedHelper {
-    return new EmbedHelper()
-      .setStyle('DataInfo')
+    return super
+      .toEmbed()
       .setTitle('Showing Support Team Data')
       .addFields(
-        { name: 'ID', value: this.id, format: 'Block' },
         { name: 'Name', value: this.name, format: 'Block' },
         { name: 'Support Role', value: `<@&${this.supportRole}> (\`${this.supportRole}\`)` },
         { name: 'Ticket Ping Role', value: `<@&${this.ticketPingRole}> (\`${this.ticketPingRole}\`)` },
@@ -88,7 +85,13 @@ class SupportTeam extends BaseParsedDatabaseItem<DatabaseSupportTeam> {
   }
 
   override toJSON(): DatabaseSupportTeam {
-    return { id: this.id, name: this.name, supportRole: this.supportRole, ticketPingRole: this.ticketPingRole };
+    return {
+      id: this.id,
+      lastUpdated: this.lastUpdated,
+      name: this.name,
+      supportRole: this.supportRole,
+      ticketPingRole: this.ticketPingRole
+    };
   }
 }
 

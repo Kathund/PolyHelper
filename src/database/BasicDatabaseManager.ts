@@ -1,6 +1,6 @@
 import Database from 'better-sqlite3';
 import { readFile, readdir } from 'node:fs/promises';
-import type { DatabaseMigrationFile, MetadataEntry } from '../types/database.ts';
+import type { DatabaseMigrationFile, DatabaseSearchFilters, MetadataEntry } from '../types/database.ts';
 
 abstract class BasicDatabaseManager {
   protected abstract readonly databaseMigrationsPath: string;
@@ -123,6 +123,15 @@ abstract class BasicDatabaseManager {
 
   deleteMetadataEntry<K extends string>(key: K) {
     this.db.prepare<string>('DELETE FROM metadata WHERE key = ?').run(key);
+  }
+
+  protected getOrder<Sort extends string>(
+    filters: DatabaseSearchFilters<Sort>,
+    sortColumns: Partial<Record<Sort | 'LastUpdated', string>>
+  ): string {
+    const sort = filters.sort ?? 'LastUpdated';
+    const sortColumn = sort === 'None' ? undefined : sortColumns[sort as Sort | 'LastUpdated'];
+    return sortColumn ? ` ORDER BY ${sortColumn} ${filters.sortDirection === 'ASC' ? 'ASC' : 'DESC'}` : '';
   }
 }
 

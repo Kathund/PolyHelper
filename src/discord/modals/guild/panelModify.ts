@@ -3,7 +3,7 @@ import DiscordModal from '../../private/interactions/DiscordModal.ts';
 import PolyHelperError from '../../../private/error.ts';
 import { InteractionFlag, InteractionResponse, type InteractionWithGuild } from '../../../types/discord.ts';
 import type Panel from '../../../database/private/Panel.ts';
-import type { DatabasePanel } from '../../../types/database.ts';
+import type { BaseDatabaseItem, DatabasePanel } from '../../../types/database.ts';
 import type { ModalMessageModalSubmitInteraction } from 'discord.js';
 
 class PanelModifyModal extends DiscordModal {
@@ -25,7 +25,7 @@ class PanelModifyModal extends DiscordModal {
       throw new PolyHelperError('The maximum open tickets value must be a whole number greater than zero.');
     }
 
-    const data: Omit<DatabasePanel, 'id'> = {
+    const data: Omit<DatabasePanel, keyof BaseDatabaseItem> = {
       name: this.getTextInputValue(interaction, 'name') ?? panel?.name ?? 'UNKNOWN',
       title: this.getTextInputValue(interaction, 'title') ?? panel?.title ?? 'UNKNOWN',
       description: this.getTextInputValue(interaction, 'description') ?? panel?.description ?? 'UNKNOWN',

@@ -77,19 +77,12 @@ class OpenTicketButton extends DiscordButton {
       }
     }
 
-    const openingTimestamp = Date.now();
     const ticket = this.discord.application.database.insertTicket({
       panelId: panel.id,
       threadId: thread.id,
       owner: interaction.user.id,
-      pinMessageId: null,
       startingMessageId: startingMessage.id,
-      openingTimestamp,
-      lastMessageTimestamp: null,
-      inactivityNoticeId: null,
-      inactivitySilenced: 0,
-      name: thread.name,
-      closed: 0
+      name: thread.name
     });
     await ticket.rename({ executor: interaction.user, silent: true });
     await interaction.followUp({

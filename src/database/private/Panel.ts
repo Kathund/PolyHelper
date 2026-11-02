@@ -11,7 +11,6 @@ import type { DatabasePanel, TicketSearchFilters } from '../../types/database.ts
 import type { TemplatePrimitive } from '../../types/misc.ts';
 
 class Panel extends BaseParsedDatabaseItem<DatabasePanel> {
-  readonly id: DatabasePanel['id'];
   readonly name: DatabasePanel['name'];
   readonly title: DatabasePanel['title'];
   readonly description: DatabasePanel['description'];
@@ -32,8 +31,7 @@ class Panel extends BaseParsedDatabaseItem<DatabasePanel> {
     data: DatabasePanel,
     private readonly manager: DatabaseManager
   ) {
-    super();
-    this.id = data.id;
+    super(data);
     this.name = data.name;
     this.title = data.title;
     this.description = data.description;
@@ -127,11 +125,10 @@ class Panel extends BaseParsedDatabaseItem<DatabasePanel> {
   }
 
   override toEmbed(): EmbedHelper {
-    return new EmbedHelper()
-      .setStyle('DataInfo')
+    return super
+      .toEmbed()
       .setTitle('Showing Panel Data')
       .addFields(
-        { name: 'ID', value: this.id, format: 'Block' },
         { name: 'Name', value: this.name, format: 'Block' },
         { name: 'Description', value: this.description, format: 'Block' },
         { name: 'Button Label', value: this.buttonLabel, format: 'Block' },
@@ -189,6 +186,7 @@ class Panel extends BaseParsedDatabaseItem<DatabasePanel> {
   override toJSON(): DatabasePanel {
     return {
       id: this.id,
+      lastUpdated: this.lastUpdated,
       name: this.name,
       title: this.title,
       description: this.description,

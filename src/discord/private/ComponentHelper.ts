@@ -408,7 +408,7 @@ export function TicketSearchResults(tickets: Ticket[], search: TicketSearch): Ba
               ? [new StringSelectMenuOptionBuilder().setLabel('No tickets found').setValue('nothing')]
               : tickets.map((ticket) =>
                   new StringSelectMenuOptionBuilder()
-                    .setLabel(`${ticket.name} - ${new Date(ticket.openingTimestamp).toISOString().split('T')[0]}`)
+                    .setLabel(`${ticket.name} - ${new Date(ticket.lastUpdated).toISOString().split('T')[0]}`)
                     .setValue(ticket.id)
                 )
           )

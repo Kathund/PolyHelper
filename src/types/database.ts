@@ -11,16 +11,20 @@ export interface MetadataEntry<K extends string> {
   value: string;
 }
 
-export interface DatabaseSearchFilters {
+export interface DatabaseSearchFilters<Sort extends string = 'LastUpdated'> {
   limit?: number;
+  sort?: Sort | 'LastUpdated' | 'None';
+  sortDirection?: 'ASC' | 'DESC';
 }
+
+export const BaseDatabaseItem = zod.object({ id: zod.string(), lastUpdated: zod.int().positive() });
+export type BaseDatabaseItem = zod.infer<typeof BaseDatabaseItem>;
 
 export const DatabaseBoolean = zod
   .union([zod.literal(0), zod.literal(1)])
   .meta({ description: "Boolean type isn't support by sql so we need to use 0 1 as a boolean" });
 
-export const DatabasePanel = zod.object({
-  id: zod.string(),
+export const DatabasePanel = BaseDatabaseItem.extend({
   name: zod.string(),
   title: zod.string(),
   description: zod.string(),
@@ -45,8 +49,7 @@ export interface PanelSearchFilters extends DatabaseSearchFilters {
   supportTeamId?: DatabasePanel['supportTeamId'];
 }
 
-export const DatabaseTicket = zod.object({
-  id: zod.string(),
+export const DatabaseTicket = BaseDatabaseItem.extend({
   panelId: zod.string(),
   threadId: zod.string(),
   owner: zod.string(),
@@ -60,8 +63,16 @@ export const DatabaseTicket = zod.object({
   closed: DatabaseBoolean
 });
 export type DatabaseTicket = zod.infer<typeof DatabaseTicket>;
+export type InsertDatabaseTicketFields =
+  | keyof BaseDatabaseItem
+  | 'pinMessageId'
+  | 'openingTimestamp'
+  | 'lastMessageTimestamp'
+  | 'inactivityNoticeId'
+  | 'inactivitySilenced'
+  | 'closed';
 
-export interface TicketSearchFilters extends DatabaseSearchFilters {
+export interface TicketSearchFilters extends DatabaseSearchFilters<'OpeningTimestamp' | 'LastMessageTimestamp'> {
   panelId?: DatabaseTicket['panelId'];
   owner?: DatabaseTicket['owner'];
   pinned?: boolean;
@@ -70,8 +81,7 @@ export interface TicketSearchFilters extends DatabaseSearchFilters {
   autoClose?: boolean;
 }
 
-export const DatabaseCloseRequest = zod.object({
-  id: zod.string(),
+export const DatabaseCloseRequest = BaseDatabaseItem.extend({
   ticketId: zod.string(),
   messageId: zod.string(),
   reason: zod.string(),
@@ -80,8 +90,7 @@ export const DatabaseCloseRequest = zod.object({
 });
 export type DatabaseCloseRequest = zod.infer<typeof DatabaseCloseRequest>;
 
-export const DatabaseSupportTeam = zod.object({
-  id: zod.string(),
+export const DatabaseSupportTeam = BaseDatabaseItem.extend({
   name: zod.string(),
   supportRole: zod.string(),
   ticketPingRole: zod.string()

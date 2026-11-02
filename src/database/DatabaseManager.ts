@@ -7,10 +7,12 @@ import SupportTeam from './private/SupportTeam.ts';
 import Ticket from './private/Ticket.ts';
 import type Application from '../Application.ts';
 import type {
+  BaseDatabaseItem,
   DatabaseCloseRequest,
   DatabasePanel,
   DatabaseSupportTeam,
   DatabaseTicket,
+  InsertDatabaseTicketFields,
   PanelSearchFilters,
   SupportTeamSearchFilters,
   TicketSearchFilters
@@ -50,6 +52,7 @@ class DatabaseManager extends BasicDatabaseManager {
   }
 
   getPanels(filters: PanelSearchFilters = {}): Panel[] {
+    const order = this.getOrder(filters, { LastUpdated: 'lastUpdated' });
     return this.db
       .prepare<
         {
@@ -60,7 +63,7 @@ class DatabaseManager extends BasicDatabaseManager {
         },
         DatabasePanel
       >(
-        'SELECT * FROM panels WHERE (@enabled IS NULL OR enabled = @enabled) AND (@filterSupportTeamId = 0 OR supportTeamId IS @supportTeamId) LIMIT @limit'
+        `SELECT * FROM panels WHERE (@enabled IS NULL OR enabled = @enabled) AND (@filterSupportTeamId = 0 OR supportTeamId IS @supportTeamId)${order} LIMIT @limit`
       )
       .all({
         enabled: filters.enabled === undefined ? null : filters.enabled ? 1 : 0,
@@ -77,14 +80,14 @@ class DatabaseManager extends BasicDatabaseManager {
     return new Panel(data, this);
   }
 
-  async insertPanel(panelData: Omit<DatabasePanel, 'id'>): Promise<Panel> {
-    const id: DatabasePanel['id'] = crypto.randomUUID();
+  async insertPanel(data: Omit<DatabasePanel, keyof BaseDatabaseItem>): Promise<Panel> {
+    const missingData: BaseDatabaseItem = { id: crypto.randomUUID(), lastUpdated: Date.now() };
     this.db
       .prepare<DatabasePanel>(
-        'INSERT INTO panels (id, name, title, description, buttonLabel, buttonEmoji, buttonStyle, openingMessage, openingMessageTitle, openingMessageContent, maxOpenTickets, pinnedTicketPrefix, closedTicketPrefix, defaultTicketName, pingSupportTeamOnOpen, supportTeamId, enabled) VALUES (@id, @name, @title, @description, @buttonLabel, @buttonEmoji, @buttonStyle, @openingMessage, @openingMessageTitle, @openingMessageContent, @maxOpenTickets, @pinnedTicketPrefix, @closedTicketPrefix, @defaultTicketName, @pingSupportTeamOnOpen, @supportTeamId, @enabled)'
+        'INSERT INTO panels (id, lastUpdated, name, title, description, buttonLabel, buttonEmoji, buttonStyle, openingMessage, openingMessageTitle, openingMessageContent, maxOpenTickets, pinnedTicketPrefix, closedTicketPrefix, defaultTicketName, pingSupportTeamOnOpen, supportTeamId, enabled) VALUES (@id, @lastUpdated, @name, @title, @description, @buttonLabel, @buttonEmoji, @buttonStyle, @openingMessage, @openingMessageTitle, @openingMessageContent, @maxOpenTickets, @pinnedTicketPrefix, @closedTicketPrefix, @defaultTicketName, @pingSupportTeamOnOpen, @supportTeamId, @enabled)'
       )
-      .run({ ...panelData, id });
-    const panel = this.getPanel(id);
+      .run({ ...data, ...missingData });
+    const panel = this.getPanel(missingData.id);
     if (!panel) throw new PolyHelperError('Something went wrong while inserting a panel');
     const message = await this.getPanelsMessage();
     await DebugTicketsCommand.updatePanelsMessage(message);
@@ -97,14 +100,15 @@ class DatabaseManager extends BasicDatabaseManager {
     await DebugTicketsCommand.updatePanelsMessage(message);
   }
 
-  async updatePanel(data: DatabasePanel): Promise<Panel> {
+  async updatePanel(data: Omit<DatabasePanel, 'lastUpdated'>): Promise<Panel> {
     const panel = this.getPanel(data.id);
     if (!panel) throw new PolyHelperError('Could not find this panel?');
+    const lastUpdated: BaseDatabaseItem['lastUpdated'] = Date.now();
     this.db
       .prepare<DatabasePanel>(
-        'UPDATE panels SET name = @name, title = @title, description = @description, buttonLabel = @buttonLabel, buttonEmoji = @buttonEmoji, buttonStyle = @buttonStyle, openingMessage = @openingMessage, openingMessageTitle = @openingMessageTitle, openingMessageContent = @openingMessageContent, maxOpenTickets = @maxOpenTickets, pinnedTicketPrefix = @pinnedTicketPrefix, closedTicketPrefix = @closedTicketPrefix, defaultTicketName = @defaultTicketName, pingSupportTeamOnOpen = @pingSupportTeamOnOpen, supportTeamId = @supportTeamId, enabled = @enabled WHERE id = @id'
+        'UPDATE panels SET lastUpdated = @lastUpdated, name = @name, title = @title, description = @description, buttonLabel = @buttonLabel, buttonEmoji = @buttonEmoji, buttonStyle = @buttonStyle, openingMessage = @openingMessage, openingMessageTitle = @openingMessageTitle, openingMessageContent = @openingMessageContent, maxOpenTickets = @maxOpenTickets, pinnedTicketPrefix = @pinnedTicketPrefix, closedTicketPrefix = @closedTicketPrefix, defaultTicketName = @defaultTicketName, pingSupportTeamOnOpen = @pingSupportTeamOnOpen, supportTeamId = @supportTeamId, enabled = @enabled WHERE id = @id'
       )
-      .run(data);
+      .run({ ...data, lastUpdated });
     const newPanel = this.getPanel(data.id);
     if (!newPanel) throw new PolyHelperError('Something went wrong while updating a panel');
     const message = await this.getPanelsMessage();
@@ -119,6 +123,12 @@ class DatabaseManager extends BasicDatabaseManager {
   }
 
   getTickets(filters: TicketSearchFilters = {}): Ticket[] {
+    const order = this.getOrder(filters, {
+      LastUpdated: 'lastUpdated',
+      OpeningTimestamp: 'openingTimestamp',
+      LastMessageTimestamp: 'lastMessageTimestamp'
+    });
+
     return this.db
       .prepare<
         {
@@ -132,7 +142,7 @@ class DatabaseManager extends BasicDatabaseManager {
         },
         DatabaseTicket
       >(
-        'SELECT * FROM tickets WHERE (@panelId IS NULL OR panelId = @panelId) AND (@owner IS NULL OR owner = @owner) AND (@pinned IS NULL OR (pinMessageId IS NOT NULL) = @pinned) AND (@inactivitySilenced IS NULL OR inactivitySilenced = @inactivitySilenced) AND (@autoClose IS NULL OR EXISTS (SELECT 1 FROM closeRequests WHERE closeRequests.ticketId = tickets.id AND closeRequests.autoClose IS NOT NULL) = @autoClose) AND (@closed IS NULL OR closed = @closed) LIMIT @limit'
+        `SELECT * FROM tickets WHERE (@panelId IS NULL OR panelId = @panelId) AND (@owner IS NULL OR owner = @owner) AND (@pinned IS NULL OR (pinMessageId IS NOT NULL) = @pinned) AND (@inactivitySilenced IS NULL OR inactivitySilenced = @inactivitySilenced) AND (@autoClose IS NULL OR EXISTS (SELECT 1 FROM closeRequests WHERE closeRequests.ticketId = tickets.id AND closeRequests.autoClose IS NOT NULL) = @autoClose) AND (@closed IS NULL OR closed = @closed)${order} LIMIT @limit`
       )
       .all({
         panelId: filters.panelId ?? null,
@@ -154,24 +164,35 @@ class DatabaseManager extends BasicDatabaseManager {
     return new Ticket(data, this);
   }
 
-  insertTicket(ticketData: Omit<DatabaseTicket, 'id'>): Ticket {
-    const id: DatabaseTicket['id'] = crypto.randomUUID();
+  insertTicket(data: Omit<DatabaseTicket, InsertDatabaseTicketFields>): Ticket {
+    const timestamp = Date.now();
+    const missingData: Pick<DatabaseTicket, InsertDatabaseTicketFields> = {
+      id: crypto.randomUUID(),
+      lastUpdated: timestamp,
+      pinMessageId: null,
+      openingTimestamp: timestamp,
+      lastMessageTimestamp: null,
+      inactivityNoticeId: null,
+      inactivitySilenced: 0,
+      closed: 0
+    };
     this.db
       .prepare<DatabaseTicket>(
-        'INSERT INTO tickets (id, panelId, threadId, owner, pinMessageId, startingMessageId, openingTimestamp, lastMessageTimestamp, inactivityNoticeId, inactivitySilenced, name, closed) VALUES (@id, @panelId, @threadId, @owner, @pinMessageId, @startingMessageId, @openingTimestamp, @lastMessageTimestamp, @inactivityNoticeId, @inactivitySilenced, @name, @closed)'
+        'INSERT INTO tickets (id, lastUpdated, panelId, threadId, owner, pinMessageId, startingMessageId, openingTimestamp, lastMessageTimestamp, inactivityNoticeId, inactivitySilenced, name, closed) VALUES (@id, @lastUpdated, @panelId, @threadId, @owner, @pinMessageId, @startingMessageId, @openingTimestamp, @lastMessageTimestamp, @inactivityNoticeId, @inactivitySilenced, @name, @closed)'
       )
-      .run({ ...ticketData, id });
-    return new Ticket({ ...ticketData, id }, this);
+      .run({ ...data, ...missingData });
+    return new Ticket({ ...data, ...missingData }, this);
   }
 
-  updateTicket(data: DatabaseTicket): Ticket {
+  updateTicket(data: Omit<DatabaseTicket, 'lastUpdated'>): Ticket {
+    const lastUpdated: BaseDatabaseItem['lastUpdated'] = Date.now();
     const update = this.db
       .prepare<DatabaseTicket>(
-        'UPDATE tickets SET panelId = @panelId, threadId = @threadId, owner = @owner, pinMessageId = @pinMessageId, startingMessageId = @startingMessageId, openingTimestamp = @openingTimestamp, lastMessageTimestamp = @lastMessageTimestamp, inactivityNoticeId = @inactivityNoticeId, inactivitySilenced = @inactivitySilenced, name = @name, closed = @closed WHERE id = @id'
+        'UPDATE tickets SET lastUpdated = @lastUpdated, panelId = @panelId, threadId = @threadId, owner = @owner, pinMessageId = @pinMessageId, startingMessageId = @startingMessageId, openingTimestamp = @openingTimestamp, lastMessageTimestamp = @lastMessageTimestamp, inactivityNoticeId = @inactivityNoticeId, inactivitySilenced = @inactivitySilenced, name = @name, closed = @closed WHERE id = @id'
       )
-      .run(data);
+      .run({ ...data, lastUpdated });
     if (update.changes === 0) throw new PolyHelperError('Could not find this ticket?');
-    return new Ticket(data, this);
+    return new Ticket({ ...data, lastUpdated }, this);
   }
 
   getCloseRequest(id: DatabaseCloseRequest['id']): CloseRequest | undefined {
@@ -201,13 +222,14 @@ class DatabaseManager extends BasicDatabaseManager {
       .map((closeRequest) => new CloseRequest(closeRequest, this));
   }
 
-  insertCloseRequest(closeRequestData: DatabaseCloseRequest): CloseRequest {
+  insertCloseRequest(data: Omit<DatabaseCloseRequest, 'lastUpdated'>): CloseRequest {
+    const lastUpdated: BaseDatabaseItem['lastUpdated'] = Date.now();
     this.db
       .prepare<DatabaseCloseRequest>(
-        'INSERT INTO closeRequests (id, ticketId, messageId, reason, closer, autoClose) VALUES (@id, @ticketId, @messageId, @reason, @closer, @autoClose)'
+        'INSERT INTO closeRequests (id, lastUpdated, ticketId, messageId, reason, closer, autoClose) VALUES (@id, @lastUpdated, @ticketId, @messageId, @reason, @closer, @autoClose)'
       )
-      .run(closeRequestData);
-    return new CloseRequest(closeRequestData, this);
+      .run({ ...data, lastUpdated });
+    return new CloseRequest({ ...data, lastUpdated }, this);
   }
 
   async deleteCloseRequest(id: DatabaseCloseRequest['id']) {
@@ -225,6 +247,7 @@ class DatabaseManager extends BasicDatabaseManager {
   }
 
   getSupportTeams(filters: SupportTeamSearchFilters = {}): SupportTeam[] {
+    const order = this.getOrder(filters, { LastUpdated: 'lastUpdated' });
     return this.db
       .prepare<
         {
@@ -234,7 +257,7 @@ class DatabaseManager extends BasicDatabaseManager {
         },
         DatabaseSupportTeam
       >(
-        'SELECT * FROM supportTeams WHERE (@supportRole IS NULL OR supportRole = @supportRole) AND (@ticketPingRole IS NULL OR ticketPingRole = @ticketPingRole) LIMIT @limit'
+        `SELECT * FROM supportTeams WHERE (@supportRole IS NULL OR supportRole = @supportRole) AND (@ticketPingRole IS NULL OR ticketPingRole = @ticketPingRole)${order} LIMIT @limit`
       )
       .all({
         supportRole: filters.supportRole ?? null,
@@ -244,24 +267,25 @@ class DatabaseManager extends BasicDatabaseManager {
       .map((data) => new SupportTeam(data, this));
   }
 
-  insertSupportTeam(data: Omit<DatabaseSupportTeam, 'id'>): SupportTeam {
-    const id: DatabaseSupportTeam['id'] = crypto.randomUUID();
+  insertSupportTeam(data: Omit<DatabaseSupportTeam, keyof BaseDatabaseItem>): SupportTeam {
+    const missingData: BaseDatabaseItem = { id: crypto.randomUUID(), lastUpdated: Date.now() };
     this.db
       .prepare<DatabaseSupportTeam>(
-        'INSERT INTO supportTeams (id, name, supportRole, ticketPingRole) VALUES (@id, @name, @supportRole, @ticketPingRole)'
+        'INSERT INTO supportTeams (id, lastUpdated, name, supportRole, ticketPingRole) VALUES (@id, @lastUpdated, @name, @supportRole, @ticketPingRole)'
       )
-      .run({ ...data, id });
-    return new SupportTeam({ ...data, id }, this);
+      .run({ ...data, ...missingData });
+    return new SupportTeam({ ...data, ...missingData }, this);
   }
 
-  updateSupportTeam(data: DatabaseSupportTeam): SupportTeam {
+  updateSupportTeam(data: Omit<DatabaseSupportTeam, 'lastUpdated'>): SupportTeam {
+    const lastUpdated: BaseDatabaseItem['lastUpdated'] = Date.now();
     const update = this.db
       .prepare<DatabaseSupportTeam>(
-        'UPDATE supportTeams SET name = @name, supportRole = @supportRole, ticketPingRole = @ticketPingRole WHERE id = @id'
+        'UPDATE supportTeams SET lastUpdated = @lastUpdated, name = @name, supportRole = @supportRole, ticketPingRole = @ticketPingRole WHERE id = @id'
       )
-      .run(data);
+      .run({ ...data, lastUpdated });
     if (update.changes === 0) throw new PolyHelperError('Could not find this support team?');
-    return new SupportTeam(data, this);
+    return new SupportTeam({ ...data, lastUpdated }, this);
   }
 
   async deleteSupportTeam(id: DatabaseSupportTeam['id']) {

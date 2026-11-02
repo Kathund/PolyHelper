@@ -1,5 +1,4 @@
 import BaseParsedDatabaseItem from './BaseParsedDatabaseItem.ts';
-import EmbedHelper from '../../discord/private/EmbedHelper.ts';
 import PolyHelperError from '../../private/error.ts';
 import {
   ActionRowBuilder,
@@ -11,12 +10,12 @@ import {
 } from 'discord.js';
 import { CloseRequestButtons } from '../../discord/private/ComponentHelper.ts';
 import type DatabaseManager from '../DatabaseManager.ts';
+import type EmbedHelper from '../../discord/private/EmbedHelper.ts';
 import type Ticket from './Ticket.ts';
 import type { AutocompleteOption } from '../../types/discord.ts';
 import type { DatabaseCloseRequest } from '../../types/database.ts';
 
 class CloseRequest extends BaseParsedDatabaseItem<DatabaseCloseRequest> {
-  readonly id: DatabaseCloseRequest['id'];
   readonly ticketId: DatabaseCloseRequest['ticketId'];
   readonly messageId: DatabaseCloseRequest['messageId'];
   readonly reason: DatabaseCloseRequest['reason'];
@@ -26,8 +25,7 @@ class CloseRequest extends BaseParsedDatabaseItem<DatabaseCloseRequest> {
     data: DatabaseCloseRequest,
     private readonly manager: DatabaseManager
   ) {
-    super();
-    this.id = data.id;
+    super(data);
     this.ticketId = data.ticketId;
     this.messageId = data.messageId;
     this.reason = data.reason;
@@ -65,11 +63,10 @@ class CloseRequest extends BaseParsedDatabaseItem<DatabaseCloseRequest> {
   }
 
   override toEmbed(): EmbedHelper {
-    const embed = new EmbedHelper()
-      .setStyle('DataInfo')
+    const embed = super
+      .toEmbed()
       .setTitle('Showing Close Request Data')
       .addFields(
-        { name: 'ID', value: this.id, format: 'Block' },
         { name: 'Ticket Id', value: this.ticketId, format: 'Block' },
         { name: 'Message Id', value: this.messageId, format: 'Block' },
         { name: 'Reason', value: this.reason, format: 'Block' },
@@ -107,6 +104,7 @@ class CloseRequest extends BaseParsedDatabaseItem<DatabaseCloseRequest> {
   override toJSON(): DatabaseCloseRequest {
     return {
       id: this.id,
+      lastUpdated: this.lastUpdated,
       ticketId: this.ticketId,
       messageId: this.messageId,
       reason: this.reason,
