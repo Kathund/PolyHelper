@@ -41,7 +41,7 @@ class DebugTicketsCommand extends DiscordCommand {
     .setPermission(InteractionPermission.Admin);
 
   static async updatePanelsMessage(message: Message): Promise<Message> {
-    const panels = message.client.discordManager.application.database.getPanels();
+    const panels = message.client.discordManager.application.database.getPanels({ sort: 'None' });
     return await message.edit({
       content: '',
       embeds: [
