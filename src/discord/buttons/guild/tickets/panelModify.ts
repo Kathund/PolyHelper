@@ -22,15 +22,15 @@ class PanelModifyButton extends DiscordButton {
     const panel = this.discord.application.database.getPanel(id);
     if (!panel) throw new PolyHelperError('Could not find this panel?');
     if (type === 'basic') {
-      return BasicPanelModal(panel).setTitle(`Editing the Basic Information of "${panel.name}"`);
+      return BasicPanelModal(panel).setTitle('Editing the Basic Information');
     } else if (type === 'supportTeam') {
       return SupportTeamPanelModal(this.discord.application.database.getSupportTeams(), panel).setTitle(
-        `Editing the Support Team of "${panel.name}"`
+        'Editing the Support Team'
       );
     } else if (type === 'button') {
-      return ButtonOptionsPanelModal(panel).setTitle(`Editing the Button of "${panel.name}"`);
+      return ButtonOptionsPanelModal(panel).setTitle('Editing the Button');
     } else if (type === 'opening') {
-      return TicketOpenOptionsPanelModal(panel).setTitle(`Editing the Opening Options of "${panel.name}"`);
+      return TicketOpenOptionsPanelModal(panel).setTitle('Editing the Opening Options');
     }
     throw new PolyHelperError('Invalid Panel edit type');
   }
