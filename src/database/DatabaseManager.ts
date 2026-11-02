@@ -138,11 +138,12 @@ class DatabaseManager extends BasicDatabaseManager {
           inactivitySilenced: DatabaseTicket['inactivitySilenced'] | null;
           autoClose: DatabaseTicket['closed'] | null;
           closed: DatabaseTicket['closed'] | null;
+          taggedProject: DatabaseTicket['taggedProject'] | null;
           limit: number;
         },
         DatabaseTicket
       >(
-        `SELECT * FROM tickets WHERE (@panelId IS NULL OR panelId = @panelId) AND (@owner IS NULL OR owner = @owner) AND (@pinned IS NULL OR (pinMessageId IS NOT NULL) = @pinned) AND (@inactivitySilenced IS NULL OR inactivitySilenced = @inactivitySilenced) AND (@autoClose IS NULL OR EXISTS (SELECT 1 FROM closeRequests WHERE closeRequests.ticketId = tickets.id AND closeRequests.autoClose IS NOT NULL) = @autoClose) AND (@closed IS NULL OR closed = @closed)${order} LIMIT @limit`
+        `SELECT * FROM tickets WHERE (@panelId IS NULL OR panelId = @panelId) AND (@owner IS NULL OR owner = @owner) AND (@pinned IS NULL OR (pinMessageId IS NOT NULL) = @pinned) AND (@inactivitySilenced IS NULL OR inactivitySilenced = @inactivitySilenced) AND (@autoClose IS NULL OR EXISTS (SELECT 1 FROM closeRequests WHERE closeRequests.ticketId = tickets.id AND closeRequests.autoClose IS NOT NULL) = @autoClose) AND (@closed IS NULL OR closed = @closed) AND (@taggedProject IS NULL OR taggedProject = @taggedProject)${order} LIMIT @limit`
       )
       .all({
         panelId: filters.panelId ?? null,
@@ -151,6 +152,7 @@ class DatabaseManager extends BasicDatabaseManager {
         inactivitySilenced: filters.inactivitySilenced === undefined ? null : filters.inactivitySilenced ? 1 : 0,
         autoClose: filters.autoClose === undefined ? null : filters.autoClose ? 1 : 0,
         closed: filters.closed === undefined ? null : filters.closed ? 1 : 0,
+        taggedProject: filters.taggedProject ?? null,
         limit: filters.limit ?? -1
       })
       .map((data) => new Ticket(data, this));
@@ -174,11 +176,12 @@ class DatabaseManager extends BasicDatabaseManager {
       lastMessageTimestamp: null,
       inactivityNoticeId: null,
       inactivitySilenced: 0,
+      taggedProject: null,
       closed: 0
     };
     this.db
       .prepare<DatabaseTicket>(
-        'INSERT INTO tickets (id, lastUpdated, panelId, threadId, owner, pinMessageId, startingMessageId, openingTimestamp, lastMessageTimestamp, inactivityNoticeId, inactivitySilenced, name, closed) VALUES (@id, @lastUpdated, @panelId, @threadId, @owner, @pinMessageId, @startingMessageId, @openingTimestamp, @lastMessageTimestamp, @inactivityNoticeId, @inactivitySilenced, @name, @closed)'
+        'INSERT INTO tickets (id, lastUpdated, panelId, threadId, owner, pinMessageId, startingMessageId, openingTimestamp, lastMessageTimestamp, inactivityNoticeId, inactivitySilenced, name, taggedProject, closed) VALUES (@id, @lastUpdated, @panelId, @threadId, @owner, @pinMessageId, @startingMessageId, @openingTimestamp, @lastMessageTimestamp, @inactivityNoticeId, @inactivitySilenced, @name, @taggedProject, @closed)'
       )
       .run({ ...data, ...missingData });
     return new Ticket({ ...data, ...missingData }, this);
@@ -188,7 +191,7 @@ class DatabaseManager extends BasicDatabaseManager {
     const lastUpdated: BaseDatabaseItem['lastUpdated'] = Date.now();
     const update = this.db
       .prepare<DatabaseTicket>(
-        'UPDATE tickets SET lastUpdated = @lastUpdated, panelId = @panelId, threadId = @threadId, owner = @owner, pinMessageId = @pinMessageId, startingMessageId = @startingMessageId, openingTimestamp = @openingTimestamp, lastMessageTimestamp = @lastMessageTimestamp, inactivityNoticeId = @inactivityNoticeId, inactivitySilenced = @inactivitySilenced, name = @name, closed = @closed WHERE id = @id'
+        'UPDATE tickets SET lastUpdated = @lastUpdated, panelId = @panelId, threadId = @threadId, owner = @owner, pinMessageId = @pinMessageId, startingMessageId = @startingMessageId, openingTimestamp = @openingTimestamp, lastMessageTimestamp = @lastMessageTimestamp, inactivityNoticeId = @inactivityNoticeId, inactivitySilenced = @inactivitySilenced, name = @name, taggedProject = @taggedProject, closed = @closed WHERE id = @id'
       )
       .run({ ...data, lastUpdated });
     if (update.changes === 0) throw new PolyHelperError('Could not find this ticket?');

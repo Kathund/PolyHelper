@@ -60,6 +60,7 @@ export const DatabaseTicket = BaseDatabaseItem.extend({
   inactivityNoticeId: zod.string().nullable(),
   inactivitySilenced: DatabaseBoolean,
   name: zod.string(),
+  taggedProject: zod.string().nullable(),
   closed: DatabaseBoolean
 });
 export type DatabaseTicket = zod.infer<typeof DatabaseTicket>;
@@ -70,6 +71,7 @@ export type InsertDatabaseTicketFields =
   | 'lastMessageTimestamp'
   | 'inactivityNoticeId'
   | 'inactivitySilenced'
+  | 'taggedProject'
   | 'closed';
 
 export interface TicketSearchFilters extends DatabaseSearchFilters<'OpeningTimestamp' | 'LastMessageTimestamp'> {
@@ -79,6 +81,7 @@ export interface TicketSearchFilters extends DatabaseSearchFilters<'OpeningTimes
   inactivitySilenced?: boolean;
   closed?: boolean;
   autoClose?: boolean;
+  taggedProject?: Exclude<DatabaseTicket['taggedProject'], null>;
 }
 
 export const DatabaseCloseRequest = BaseDatabaseItem.extend({

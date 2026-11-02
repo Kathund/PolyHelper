@@ -34,11 +34,12 @@ export async function githubPaginate<T>(url: string, config: AxiosRequestConfig 
   return results;
 }
 
-export async function getRepoCount() {
-  const cached = Application.cache.get<number>('github:repo:count');
+export async function getOrganizationRepositories(owner: string = 'polyfrost'): Promise<MinimalRepository[]> {
+  owner = owner.toLowerCase();
+  const cached = Application.cache.get<MinimalRepository[]>(`github:repositories:${owner}`);
   if (cached) return cached;
-  const repos = await githubPaginate<MinimalRepository>('https://api.github.com/orgs/polyfrost/repos');
-  return Application.cache.set<number>('github:repo:count', repos.length);
+  const repos = await githubPaginate<MinimalRepository>(`https://api.github.com/orgs/${owner}/repos`);
+  return Application.cache.set<MinimalRepository[]>(`github:repositories:${owner}`, repos);
 }
 
 export const githubRepoRegex = /github\.com\/([\w.-]+)\/([\w.-]+?)(?:\.git)?(?:[/#?]|$)/i;

@@ -4,6 +4,7 @@ import DiscordButton from '../../../private/interactions/DiscordButton.ts';
 import PolyHelperError from '../../../../private/error.ts';
 import { InteractionFlag, InteractionResponse, type InteractionWithGuild } from '../../../../types/discord.ts';
 import { TicketSearchFilterModal } from '../../../private/ComponentHelper.ts';
+import { getOrganizationRepositories } from '../../../../utils/githubUtils.ts';
 import type { ButtonInteraction } from 'discord.js';
 
 class TicketSearchFilterButton extends DiscordButton {
@@ -18,7 +19,11 @@ class TicketSearchFilterButton extends DiscordButton {
     const filters = Application.cache.get(`ticket:search:${id}`);
     if (!filters) throw new PolyHelperError('These ticket search filters have expired. Run the search again.');
     await interaction.showModal(
-      TicketSearchFilterModal(filters, this.discord.application.database.getPanels())
+      TicketSearchFilterModal(
+        filters,
+        this.discord.application.database.getPanels(),
+        await getOrganizationRepositories()
+      )
         .setTitle('Edit Ticket Filters')
         .setCustomId(interaction.customId)
     );

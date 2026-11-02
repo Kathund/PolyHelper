@@ -29,6 +29,7 @@ import type Panel from '../../database/private/Panel.ts';
 import type SupportTeam from '../../database/private/SupportTeam.ts';
 import type Ticket from '../../database/private/Ticket.ts';
 import type { DatabaseCloseRequest, DatabasePanel, DatabaseSupportTeam } from '../../types/database.ts';
+import type { MinimalRepository } from '../../types/github.ts';
 import type { TicketSearch } from '../../types/misc.ts';
 
 export class PatchedContainerBuilder extends ContainerBuilder {
@@ -308,7 +309,30 @@ export function PanelStringSelectMenu(
   );
 }
 
-export function TicketSearchFilterModal(search: TicketSearch, panels: DatabasePanel[] | Panel[]): ModalBuilder {
+export function GithubReposStringSelectMenu(
+  repos: MinimalRepository[],
+  current?: MinimalRepository['name']
+): StringSelectMenuBuilder {
+  return new StringSelectMenuBuilder().setOptions(
+    repos
+      .filter((repo) => !repo.archived)
+      .filter((repo) => !repo.fork)
+      .sort((a, b) => new Date(b.pushed_at).getTime() - new Date(a.pushed_at).getTime())
+      .slice(0, 25)
+      .map((repo) =>
+        new StringSelectMenuOptionBuilder()
+          .setLabel(repo.name)
+          .setValue(repo.name)
+          .setDefault(repo.name === current)
+      )
+  );
+}
+
+export function TicketSearchFilterModal(
+  search: TicketSearch,
+  panels: DatabasePanel[] | Panel[],
+  repos: MinimalRepository[]
+): ModalBuilder {
   return new ModalBuilder().addLabelComponents(
     new LabelBuilder()
       .setLabel('Panel')
@@ -327,6 +351,15 @@ export function TicketSearchFilterModal(search: TicketSearch, panels: DatabasePa
         .setMinValues(1)
         .setRequired(false)
     ),
+    new LabelBuilder()
+      .setLabel('Tagged Project')
+      .setStringSelectMenuComponent(
+        GithubReposStringSelectMenu(repos, search.taggedProject)
+          .setCustomId('taggedProject')
+          .setMinValues(1)
+          .setMaxValues(1)
+          .setRequired(false)
+      ),
     new LabelBuilder().setLabel('Pin State').setRadioGroupComponent(
       new RadioGroupBuilder().setCustomId('pinned').setOptions(
         new RadioGroupOptionBuilder()
@@ -358,22 +391,6 @@ export function TicketSearchFilterModal(search: TicketSearch, panels: DatabasePa
           .setValue('true')
           .setDefault(search.closed === true)
       )
-    ),
-    new LabelBuilder().setLabel('Inactivity State').setRadioGroupComponent(
-      new RadioGroupBuilder().setCustomId('inactivitySilenced').setOptions(
-        new RadioGroupOptionBuilder()
-          .setLabel('Any')
-          .setValue('any')
-          .setDefault(search.inactivitySilenced === undefined),
-        new RadioGroupOptionBuilder()
-          .setLabel('Silenced')
-          .setValue('true')
-          .setDefault(search.inactivitySilenced === true),
-        new RadioGroupOptionBuilder()
-          .setLabel('Unsilenced')
-          .setValue('false')
-          .setDefault(search.inactivitySilenced === false)
-      )
     )
   );
 }
@@ -392,6 +409,7 @@ export function TicketSearchResults(tickets: Ticket[], search: TicketSearch): Ba
   if (search.inactivitySilenced !== undefined) {
     embed.addFields({ name: 'Inactivity State', value: search.inactivitySilenced ? 'Silenced' : 'Unsilenced' });
   }
+  if (search.taggedProject) embed.addFields({ name: 'Tagged Project', value: search.taggedProject, format: 'Block' });
   if (search.panelId) embed.addFields({ name: 'Panel Id', value: search.panelId, format: 'Block' });
   if (search.owner) embed.addFields({ name: 'Owner', value: `<@${search.owner}> (${search.owner})` });
 

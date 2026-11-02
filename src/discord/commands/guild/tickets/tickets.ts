@@ -35,6 +35,12 @@ class TicketsCommand extends DiscordCommand {
         .addUserOption((option) => option.setName('owner').setDescription('The person who opened the ticket'))
         .addStringOption((option) =>
           option
+            .setName('tagged-github-repo')
+            .setDescription('Search tickets by tagged github repo')
+            .setAutocomplete(true)
+        )
+        .addStringOption((option) =>
+          option
             .setName('pin-state')
             .setDescription('The current ticket pin state')
             .addChoices({ name: 'Pinned', value: 'pinned' }, { name: 'Unpinned', value: 'unpinned' })
@@ -64,18 +70,17 @@ class TicketsCommand extends DiscordCommand {
   }
 
   async executeSearch(interaction: InteractionWithGuild<ChatInputCommandInteraction>) {
-    const panelId = interaction.options.getString('panel-id');
-    const owner = interaction.options.getUser('owner');
     const pinState = interaction.options.getString('pin-state');
     const state = interaction.options.getString('state');
     const inactivityState = interaction.options.getString('inactivity-state');
 
     const search: TicketSearch = {
-      panelId: panelId ?? undefined,
-      owner: owner?.id,
+      panelId: interaction.options.getString('panel-id') ?? undefined,
+      owner: interaction.options.getUser('owner')?.id,
       pinned: pinState === null ? undefined : pinState === 'pinned',
       closed: state === null ? undefined : state === 'closed',
-      inactivitySilenced: inactivityState === null ? undefined : inactivityState === 'silenced'
+      inactivitySilenced: inactivityState === null ? undefined : inactivityState === 'silenced',
+      taggedProject: interaction.options.getString('tagged-github-repo') ?? undefined
     };
 
     const tickets = this.discord.application.database.getTickets({ ...search, limit: 25 });

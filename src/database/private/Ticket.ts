@@ -36,6 +36,7 @@ class Ticket extends BaseParsedDatabaseItem<DatabaseTicket> {
   readonly inactivityNoticeId: DatabaseTicket['inactivityNoticeId'];
   readonly #inactivitySilenced: DatabaseTicket['inactivitySilenced'];
   readonly name: DatabaseTicket['name'];
+  readonly taggedProject: DatabaseTicket['taggedProject'];
   readonly #closed: DatabaseTicket['closed'];
   constructor(
     data: DatabaseTicket,
@@ -52,6 +53,7 @@ class Ticket extends BaseParsedDatabaseItem<DatabaseTicket> {
     this.inactivityNoticeId = data.inactivityNoticeId;
     this.#inactivitySilenced = data.inactivitySilenced;
     this.name = data.name;
+    this.taggedProject = data.taggedProject;
     this.#closed = data.closed;
   }
 
@@ -361,6 +363,18 @@ class Ticket extends BaseParsedDatabaseItem<DatabaseTicket> {
     });
   }
 
+  async tagProject({
+    reason,
+    executor,
+    taggedProject
+  }: TicketAction & { taggedProject: DatabaseTicket['taggedProject'] }) {
+    const thread = await this.getThread();
+    const embed = new TicketActionEmbed({ title: 'Tagged', reason, executor });
+    embed.setFields({ name: 'Project', value: taggedProject ?? 'None' }, ...embed.fields);
+    await thread.send({ embeds: [embed] });
+    this.manager.updateTicket({ ...this.toJSON(), taggedProject });
+  }
+
   override toEmbed(): EmbedHelper {
     return super
       .toEmbed()
@@ -439,6 +453,7 @@ class Ticket extends BaseParsedDatabaseItem<DatabaseTicket> {
       inactivityNoticeId: this.inactivityNoticeId,
       inactivitySilenced: this.#inactivitySilenced,
       name: this.name,
+      taggedProject: this.taggedProject,
       closed: this.#closed
     };
   }
