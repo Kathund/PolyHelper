@@ -55,7 +55,7 @@ class SupportTeam extends BaseParsedDatabaseItem<DatabaseSupportTeam> {
         { name: 'Name', value: this.name, format: 'Block' },
         { name: 'Support Role', value: `<@&${this.supportRole}> (\`${this.supportRole}\`)` },
         { name: 'Ticket Ping Role', value: `<@&${this.ticketPingRole}> (\`${this.ticketPingRole}\`)` },
-        { name: 'Amount of Panels', value: this.panels.length.toString(), format: 'Small Block' }
+        { name: 'Amount of Panels', value: this.panels.length, format: 'Number Small Block' }
       );
   }
 

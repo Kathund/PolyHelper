@@ -33,10 +33,12 @@ class CloseRequestCommand extends DiscordCommand {
      */
     const autoCloseTime = (interaction.options.getString('auto-close') ?? '3d')?.replace(/^(\d+)$/, '$1h');
     const autoCloseDuration = autoCloseTime ? ms(autoCloseTime as StringValue) : undefined;
-    if (autoCloseTime && (!Number.isFinite(autoCloseDuration) || autoCloseDuration! <= 0)) {
+    if (autoCloseTime && autoCloseDuration !== 0 && (!Number.isFinite(autoCloseDuration) || autoCloseDuration! < 0)) {
       throw new PolyHelperError('The auto-close time must be a valid duration greater than zero.');
     }
-    const autoClose: DatabaseCloseRequest['autoClose'] = autoCloseDuration ? Date.now() + autoCloseDuration : null;
+
+    const autoClose: DatabaseCloseRequest['autoClose'] =
+      autoCloseDuration && autoCloseDuration > 0 ? Date.now() + autoCloseDuration : null;
 
     await this.getTicket(interaction).closeRequest({
       reason: this.getReason(interaction),

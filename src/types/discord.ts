@@ -99,10 +99,16 @@ export type EmbedHelperValueFormatter =
   | 'Discord User'
   | 'Discord Role'
   | 'Discord Channel'
-  | 'Discord Guild';
+  | 'Discord Guild'
+  | 'Number'
+  | 'Number Block'
+  | 'Number Small Block';
 export type EmbedHelperField =
   | (APIEmbedField & { format?: 'Small Block' | 'Block' })
-  | (Omit<APIEmbedField, 'value'> & { value: number; format: 'Timestamp' })
+  | (Omit<APIEmbedField, 'value'> & {
+      value: number;
+      format: 'Timestamp' | 'Number' | 'Number Block' | 'Number Small Block';
+    })
   | (Omit<APIEmbedField, 'value'> & { value: boolean; format: 'Boolean' })
   | (Omit<APIEmbedField, 'value'> & { value: User | string; format: 'Discord User' })
   | (Omit<APIEmbedField, 'value'> & { value: Role | string; format: 'Discord Role' })

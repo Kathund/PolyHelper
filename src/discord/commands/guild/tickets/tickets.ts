@@ -11,6 +11,7 @@ import {
 } from 'discord.js';
 import { InteractionFlag, InteractionPermission, type InteractionWithGuild } from '../../../../types/discord.ts';
 import { TicketSearchResults } from '../../../private/ComponentHelper.ts';
+import type CloseRequest from '../../../../database/private/CloseRequest.ts';
 import type Panel from '../../../../database/private/Panel.ts';
 import type { TicketSearch } from '../../../../types/misc.ts';
 
@@ -87,7 +88,7 @@ class TicketsCommand extends DiscordCommand {
     await interaction.followUp(TicketSearchResults(tickets, search));
   }
 
-  static getTicketsOverviewMessageData(panels: Panel[]): BaseMessageOptions {
+  static getTicketsOverviewMessageData(panels: Panel[], closeRequests: CloseRequest[]): BaseMessageOptions {
     const parsedPanels = panels.sort((a, b) => a.name.localeCompare(b.name)).map((panel) => panel.getOverviewFields());
     return {
       embeds: [
@@ -110,18 +111,28 @@ class TicketsCommand extends DiscordCommand {
           .addFields(
             {
               name: 'Total Tickets',
-              value: parsedPanels.reduce((total, panel) => total + panel.tickets, 0).toString(),
-              inline: true
+              value: parsedPanels.reduce((total, panel) => total + panel.tickets, 0),
+              inline: true,
+              format: 'Number'
             },
             {
               name: 'Total Open Tickets',
-              value: parsedPanels.reduce((total, panel) => total + panel.openTickets, 0).toString(),
-              inline: true
+              value: parsedPanels.reduce((total, panel) => total + panel.openTickets, 0),
+              inline: true,
+              format: 'Number'
             },
             {
               name: 'Total Pinned Tickets',
-              value: parsedPanels.reduce((total, panel) => total + panel.pinnedTickets, 0).toString(),
-              inline: true
+              value: parsedPanels.reduce((total, panel) => total + panel.pinnedTickets, 0),
+              inline: true,
+              format: 'Number'
+            },
+            { name: 'Total Close Requests', value: closeRequests.length, inline: true, format: 'Number' },
+            {
+              name: 'Total Close Requests With Auto Close',
+              value: closeRequests.filter((closeRequest) => closeRequest.autoClose !== null).length,
+              inline: true,
+              format: 'Number'
             }
           )
       ],
@@ -143,7 +154,10 @@ class TicketsCommand extends DiscordCommand {
 
   async executeOverview(interaction: InteractionWithGuild<ChatInputCommandInteraction>) {
     await interaction.followUp(
-      TicketsCommand.getTicketsOverviewMessageData(this.discord.application.database.getPanels())
+      TicketsCommand.getTicketsOverviewMessageData(
+        this.discord.application.database.getPanels(),
+        this.discord.application.database.getCloseRequests()
+      )
     );
   }
 

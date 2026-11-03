@@ -93,6 +93,11 @@ export const DatabaseCloseRequest = BaseDatabaseItem.extend({
 });
 export type DatabaseCloseRequest = zod.infer<typeof DatabaseCloseRequest>;
 
+export interface CloseRequestSearchFilters extends DatabaseSearchFilters<'AutoClose'> {
+  closer?: DatabaseCloseRequest['closer'];
+  hasAutoClose?: boolean;
+}
+
 export const DatabaseSupportTeam = BaseDatabaseItem.extend({
   name: zod.string(),
   supportRole: zod.string(),

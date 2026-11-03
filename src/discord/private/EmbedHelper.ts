@@ -10,8 +10,8 @@ import {
 } from 'discord.js';
 import { CommonDevs, EmbedStyles } from '../../private/constants.ts';
 import { ConfigDiscordEmbedsColors } from '../../types/config.ts';
+import { formatNumber, getReason } from '../../utils/stringUtils.ts';
 import { getFullUserDisplayName, getMention } from '../../utils/discordUtils.ts';
-import { getReason } from '../../utils/stringUtils.ts';
 import type { DevData, DevName } from '../../types/application.ts';
 import type { EmbedHelperField, EmbedStyleData, EmbedStyleName } from '../../types/discord.ts';
 import type { TicketAction } from '../../types/misc.ts';
@@ -99,6 +99,12 @@ export default class EmbedHelper extends EmbedBuilder {
         : `\`${'name' in value ? value.name : 'UNKNOWN'}\` (\`${value.id}\`) <#${value.id}>`;
     } else if (format === 'Discord Guild') {
       return typeof value === 'string' ? `\`${value}\`` : `\`@${value.name}\` (\`${value.id}\`)`;
+    } else if (format === 'Number') {
+      return formatNumber(value);
+    } else if (format === 'Number Block') {
+      return `\`\`\`${formatNumber(value)}\`\`\``;
+    } else if (format === 'Number Small Block') {
+      return `\`${formatNumber(value)}\``;
     }
     return String(value);
   }

@@ -12,7 +12,10 @@ class RefreshTicketsOverviewEmbedButton extends DiscordButton {
 
   override async execute(interaction: InteractionWithGuild<ButtonInteraction>) {
     await interaction.editReply(
-      TicketsCommand.getTicketsOverviewMessageData(this.discord.application.database.getPanels())
+      TicketsCommand.getTicketsOverviewMessageData(
+        this.discord.application.database.getPanels(),
+        this.discord.application.database.getCloseRequests()
+      )
     );
   }
 }

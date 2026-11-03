@@ -8,6 +8,7 @@ import Ticket from './private/Ticket.ts';
 import type Application from '../Application.ts';
 import type {
   BaseDatabaseItem,
+  CloseRequestSearchFilters,
   DatabaseCloseRequest,
   DatabasePanel,
   DatabaseSupportTeam,
@@ -204,6 +205,27 @@ class DatabaseManager extends BasicDatabaseManager {
       .get(id);
     if (!data) return data;
     return new CloseRequest(data, this);
+  }
+
+  getCloseRequests(filters: CloseRequestSearchFilters = {}): CloseRequest[] {
+    const order = this.getOrder(filters, { LastUpdated: 'lastUpdated', AutoClose: 'autoClose' });
+    return this.db
+      .prepare<
+        {
+          closer: DatabaseCloseRequest['closer'] | null;
+          hasAutoClose: DatabaseCloseRequest['autoClose'] | null;
+          limit: number;
+        },
+        DatabaseCloseRequest
+      >(
+        `SELECT * FROM closeRequests WHERE (@closer IS NULL OR closer = @closer) AND (@hasAutoClose IS NULL OR (autoClose IS NOT NULL) = @hasAutoClose)${order} LIMIT @limit`
+      )
+      .all({
+        closer: filters.closer ?? null,
+        hasAutoClose: filters.hasAutoClose === undefined ? null : filters.hasAutoClose ? 1 : 0,
+        limit: filters.limit ?? -1
+      })
+      .map((data) => new CloseRequest(data, this));
   }
 
   getCloseRequestByTicketId(id: DatabaseCloseRequest['ticketId']): CloseRequest | undefined {

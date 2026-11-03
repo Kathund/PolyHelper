@@ -71,3 +71,22 @@ export function replaceVariables(template: string, variables: Readonly<Record<st
 export function getReason(reason: string | null | undefined): string {
   return reason ?? 'No reason provided';
 }
+
+export function formatNumber(number: number | string, decimals: number = 2) {
+  if (typeof number === 'string') return number;
+  if (number === undefined || number === 0) return '0';
+
+  const isNegative = number < 0;
+
+  if (number < 100000 && number > -100000) {
+    return Number(number).toLocaleString();
+  }
+
+  const abbrev = ['', 'K', 'M', 'B', 'T', 'Qa', 'Qi', 'S', 'O', 'N', 'D'];
+  const unformattedNumber = Math.abs(number);
+
+  const abbrevIndex = Math.floor(Math.log10(unformattedNumber) / 3);
+  const shortNumber = (unformattedNumber / Math.pow(10, abbrevIndex * 3)).toFixed(decimals);
+
+  return `${isNegative ? '-' : ''}${shortNumber}${abbrev[abbrevIndex]}`;
+}
