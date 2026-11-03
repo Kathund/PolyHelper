@@ -19,7 +19,9 @@ class ScanSparkLogContextMenu extends DiscordContextMenu<MessageContextMenuComma
     .setType(ApplicationCommandType.Message);
 
   override async execute(interaction: InteractionWithGuild<MessageContextMenuCommandInteraction>) {
-    const sparkId = findSparkId(interaction.targetMessage.content);
+    const sparkId = findSparkId(
+      interaction.targetMessage.messageSnapshots.at(0)?.content ?? interaction.targetMessage.content
+    );
     if (!sparkId) throw new PolyHelperError("That isn't a spark.lucko.me link");
     await this.discord.application.spark.scanSparkLog({
       mode: 'analyze',

@@ -93,15 +93,15 @@ abstract class BasicInteractionHandler<
       ],
       [
         permission === InteractionPermission.PolyfrostTeam && !isPolyfrostTeamMemberCheck,
-        "You don't have permission to use this command. You are required to be appart of the Polyfrost Team."
+        "You don't have permission to use this command. You are required to be apart of the Polyfrost Team."
       ],
       [
         permission === InteractionPermission.Moderator && !isModeratorMemberCheck,
-        "You don't have permission to use this command. You are required to be appart of the Moderation Team."
+        "You don't have permission to use this command. You are required to be apart of the Moderation Team."
       ],
       [
         permission === InteractionPermission.Support && !isSupportMemberCheck,
-        "You don't have permission to use this command. You are required to be appart of the Support Team."
+        "You don't have permission to use this command. You are required to be apart of the Support Team."
       ]
     ];
 
