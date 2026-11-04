@@ -1,7 +1,6 @@
 import Application from '../../Application.ts';
 import EmbedHelper from './EmbedHelper.ts';
 import PolyHelperError from '../../private/error.ts';
-import config from '../../../config.json' with { type: 'json' };
 import {
   ActionRowBuilder,
   type BaseMessageOptions,
@@ -25,12 +24,15 @@ import {
 } from 'discord.js';
 import { ConfigDiscordEmbedsColors } from '../../types/config.ts';
 import { hexToRgb } from '../../utils/miscUtils.ts';
+import { readFileSync } from 'node:fs';
 import type Panel from '../../database/private/Panel.ts';
 import type SupportTeam from '../../database/private/SupportTeam.ts';
 import type Ticket from '../../database/private/Ticket.ts';
 import type { DatabaseCloseRequest, DatabasePanel, DatabaseSupportTeam } from '../../types/database.ts';
 import type { MinimalRepository } from '../../types/github.ts';
 import type { TicketSearch } from '../../types/misc.ts';
+
+const config = JSON.parse(readFileSync('config.json', 'utf-8'));
 
 export class PatchedContainerBuilder extends ContainerBuilder {
   constructor() {

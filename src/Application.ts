@@ -56,7 +56,7 @@ class Application {
 
   private static getGitCommit(): RuntimeInformation['commit'] {
     try {
-      return execSync('git rev-parse HEAD', { encoding: 'utf8' }).trim();
+      return process.env.GIT_COMMIT ?? execSync('git rev-parse HEAD', { encoding: 'utf8' }).trim();
     } catch (error) {
       console.error(error);
       return 'UNKNOWN';
@@ -65,7 +65,9 @@ class Application {
 
   private static getGitDirty(): RuntimeInformation['dirty'] {
     try {
-      return execSync('git status --porcelain', { encoding: 'utf8' }).trim().length > 0;
+      return process.env.GIT_DIRTY !== undefined
+        ? process.env.GIT_DIRTY === 'true'
+        : execSync('git status --porcelain', { encoding: 'utf8' }).trim().length > 0;
     } catch (error) {
       console.error(error);
       return false;
@@ -77,7 +79,12 @@ class Application {
   }
 
   static getRuntimeInformation(): RuntimeInformation {
-    return { commit: this.runtimeInformation.commit, dirty: this.runtimeInformation.dirty, startTime: this.startTime };
+    return {
+      commit: this.runtimeInformation.commit,
+      dirty: this.runtimeInformation.dirty,
+      startTime: this.startTime,
+      docker: process.env.RUNNING_IN_DOCKER === 'true'
+    };
   }
 
   static getUserAgent() {

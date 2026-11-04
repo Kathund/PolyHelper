@@ -6,7 +6,7 @@
   "module": "index.ts",
   "type": "module",
   "engines": {
-    "node": ">=24.19.0",
+    "node": "^24.22.1 || >=26.12.1",
     "pnpm": ">=11.21.0",
     "npm": "forbidden, use pnpm instead",
     "yarn": "forbidden, use pnpm instead",

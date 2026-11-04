@@ -29,7 +29,7 @@ class InformationCommand extends DiscordCommand {
   }
 
   static InformationComponent(ownerId: string): NonNullable<BaseMessageOptions['components']> {
-    const { commit, dirty, startTime } = Application.getRuntimeInformation();
+    const { commit, dirty, startTime, docker } = Application.getRuntimeInformation();
     return [
       new PatchedContainerBuilder()
         .addTextDisplayComponents(
@@ -47,6 +47,11 @@ class InformationCommand extends DiscordCommand {
                 {
                   name: 'Is Git Dirty',
                   value: dirty !== null ? (dirty ? ':white_check_mark: Yes' : ':x: No') : 'UNKNOWN',
+                  format: false
+                },
+                {
+                  name: 'Is Inside of Docker Container',
+                  value: docker ? ':white_check_mark: Yes' : ':x: No',
                   format: false
                 }
               ].map((line) => this.formatInformation(line))

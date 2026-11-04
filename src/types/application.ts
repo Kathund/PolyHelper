@@ -43,6 +43,7 @@ export interface RuntimeInformation {
   commit: string;
   dirty: boolean;
   startTime: number;
+  docker: boolean;
 }
 
 export interface PaginatedResponse<T> {

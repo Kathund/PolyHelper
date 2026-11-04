@@ -29,3 +29,29 @@ Each analysis has a spend target (`sparkAnalysis.costTarget`), where the agent i
 2. set `sparkAnalysis.enabled` to `true` and fill in `sparkAnalysis.anthropicApiKey`
 3. optionally set `sparkAnalysis.githubToken` so the agent can search mod source code and scan mods that aren't on
    Modrinth
+
+## docker
+
+### requirements
+
+- [Docker](https://docs.docker.com/get-docker/) >= 20
+  - Older versions may also work, but have not been tested.
+
+1. clone it
+2. copy `config.example.json` to `config.json` and fill it out
+
+3. Run the container:
+
+The container runs as the `node` user (UID/GID `1000`). Create the folders before starting the container, otherwise
+Docker creates them owned by root:
+
+```bash
+mkdir -p data
+sudo chown -R 1000:1000 config.json data
+```
+
+```bash
+  docker container run --restart=unless-stopped -itd -v ./config.json:/app/config.json -v ./data/:/app/data/ --name polyhelper ghcr.io/kathund/polyhelper:latest
+```
+
+Note that the path of the configuration source file must either be relative (with the `./`) or absolute.

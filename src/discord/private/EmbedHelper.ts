@@ -1,4 +1,3 @@
-import config from '../../../config.json' with { type: 'json' };
 import {
   type APIEmbed,
   type APIEmbedField,
@@ -12,9 +11,12 @@ import { CommonDevs, EmbedStyles } from '../../private/constants.ts';
 import { ConfigDiscordEmbedsColors } from '../../types/config.ts';
 import { formatNumber, getReason } from '../../utils/stringUtils.ts';
 import { getFullUserDisplayName, getMention } from '../../utils/discordUtils.ts';
+import { readFileSync } from 'node:fs';
 import type { DevData, DevName } from '../../types/application.ts';
 import type { EmbedHelperField, EmbedStyleData, EmbedStyleName } from '../../types/discord.ts';
 import type { TicketAction } from '../../types/misc.ts';
+
+const config = JSON.parse(readFileSync('config.json', 'utf-8'));
 
 export default class EmbedHelper extends EmbedBuilder {
   static embedDescriptionLimit = 4096;
