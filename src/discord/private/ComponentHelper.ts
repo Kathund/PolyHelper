@@ -71,7 +71,7 @@ export function ViewSourceCodeButton(): ButtonBuilder {
   return new ButtonBuilder()
     .setStyle(ButtonStyle.Link)
     .setLabel('View Source Code')
-    .setURL('https://github.com/Polyfrost/PolyHelper');
+    .setURL('https://github.com/kathund/PolyHelper');
 }
 
 export function OpenTicketButton({
