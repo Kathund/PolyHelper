@@ -37,6 +37,8 @@ class Ticket extends BaseParsedDatabaseItem<DatabaseTicket> {
   readonly #inactivitySilenced: DatabaseTicket['inactivitySilenced'];
   readonly name: DatabaseTicket['name'];
   readonly taggedProject: DatabaseTicket['taggedProject'];
+  readonly closedBy: DatabaseTicket['closedBy'];
+  readonly closedReason: DatabaseTicket['closedReason'];
   readonly #closed: DatabaseTicket['closed'];
   constructor(
     data: DatabaseTicket,
@@ -54,6 +56,8 @@ class Ticket extends BaseParsedDatabaseItem<DatabaseTicket> {
     this.#inactivitySilenced = data.inactivitySilenced;
     this.name = data.name;
     this.taggedProject = data.taggedProject;
+    this.closedBy = data.closedBy;
+    this.closedReason = data.closedReason;
     this.#closed = data.closed;
   }
 
@@ -235,7 +239,12 @@ class Ticket extends BaseParsedDatabaseItem<DatabaseTicket> {
     const closeRequest = this.manager.getCloseRequestByTicketId(this.id);
     if (closeRequest) await this.manager.deleteCloseRequest(closeRequest.id);
     await thread.setArchived(true, `Ticket closed by ${getUserDisplayName(executor)}`);
-    this.manager.updateTicket({ ...updated.toJSON(), closed: 1 });
+    this.manager.updateTicket({
+      ...updated.toJSON(),
+      closed: 1,
+      closedBy: executor.id,
+      closedReason: getReason(reason)
+    });
   }
 
   async open({ reason, executor }: TicketAction) {
@@ -250,7 +259,7 @@ class Ticket extends BaseParsedDatabaseItem<DatabaseTicket> {
       silent: true
     });
     await thread.send({ embeds: [new TicketActionEmbed({ title: 'Opened', reason, executor })] });
-    this.manager.updateTicket({ ...updated.toJSON(), closed: 0 });
+    this.manager.updateTicket({ ...updated.toJSON(), closed: 0, closedBy: null, closedReason: null });
   }
 
   async pin({ reason, executor }: TicketAction) {
@@ -454,6 +463,8 @@ class Ticket extends BaseParsedDatabaseItem<DatabaseTicket> {
       inactivitySilenced: this.#inactivitySilenced,
       name: this.name,
       taggedProject: this.taggedProject,
+      closedBy: this.closedBy,
+      closedReason: this.closedReason,
       closed: this.#closed
     };
   }
