@@ -13,8 +13,8 @@ import type {
   DatabasePanel,
   DatabaseSupportTeam,
   DatabaseTicket,
-  InsertDatabaseTicketFields,
   PanelSearchFilters,
+  RequiredDatabaseFields,
   SupportTeamSearchFilters,
   TicketSearchFilters
 } from '../types/database.ts';
@@ -169,27 +169,17 @@ class DatabaseManager extends BasicDatabaseManager {
     return new Ticket(data, this);
   }
 
-  insertTicket(data: Omit<DatabaseTicket, InsertDatabaseTicketFields>): Ticket {
+  insertTicket(data: Pick<DatabaseTicket, RequiredDatabaseFields>): Ticket {
+    const id = crypto.randomUUID();
     const timestamp = Date.now();
-    const missingData: Pick<DatabaseTicket, InsertDatabaseTicketFields> = {
-      id: crypto.randomUUID(),
-      lastUpdated: timestamp,
-      pinMessageId: null,
-      openingTimestamp: timestamp,
-      lastMessageTimestamp: null,
-      inactivityNoticeId: null,
-      inactivitySilenced: 0,
-      taggedProject: null,
-      closedBy: null,
-      closedReason: null,
-      closed: 0
-    };
     this.db
-      .prepare<DatabaseTicket>(
-        'INSERT INTO tickets (id, lastUpdated, panelId, threadId, owner, pinMessageId, startingMessageId, openingTimestamp, lastMessageTimestamp, inactivityNoticeId, inactivitySilenced, name, taggedProject, closedBy, closedReason, closed) VALUES (@id, @lastUpdated, @panelId, @threadId, @owner, @pinMessageId, @startingMessageId, @openingTimestamp, @lastMessageTimestamp, @inactivityNoticeId, @inactivitySilenced, @name, @taggedProject, @closedBy, @closedReason, @closed)'
+      .prepare<Pick<DatabaseTicket, keyof BaseDatabaseItem | RequiredDatabaseFields | 'openingTimestamp'>>(
+        'INSERT INTO tickets (id, lastUpdated, name, panelId, threadId, owner, startingMessageId, openingTimestamp) VALUES (@id, @lastUpdated, @name, @panelId, @threadId, @owner, @startingMessageId, @openingTimestamp)'
       )
-      .run({ ...data, ...missingData });
-    return new Ticket({ ...data, ...missingData }, this);
+      .run({ ...data, id, lastUpdated: timestamp, openingTimestamp: timestamp });
+    const ticket = this.getTicket(id);
+    if (!ticket) throw new PolyHelperError('Something went wrong with inserting this ticket');
+    return ticket;
   }
 
   updateTicket(data: Omit<DatabaseTicket, 'lastUpdated'>): Ticket {

@@ -66,17 +66,7 @@ export const DatabaseTicket = BaseDatabaseItem.extend({
   closed: DatabaseBoolean
 });
 export type DatabaseTicket = zod.infer<typeof DatabaseTicket>;
-export type InsertDatabaseTicketFields =
-  | keyof BaseDatabaseItem
-  | 'pinMessageId'
-  | 'openingTimestamp'
-  | 'lastMessageTimestamp'
-  | 'inactivityNoticeId'
-  | 'inactivitySilenced'
-  | 'taggedProject'
-  | 'closedBy'
-  | 'closedReason'
-  | 'closed';
+export type RequiredDatabaseFields = 'name' | 'panelId' | 'threadId' | 'owner' | 'startingMessageId';
 
 export interface TicketSearchFilters extends DatabaseSearchFilters<'OpeningTimestamp' | 'LastMessageTimestamp'> {
   panelId?: DatabaseTicket['panelId'];
@@ -86,7 +76,7 @@ export interface TicketSearchFilters extends DatabaseSearchFilters<'OpeningTimes
   closed?: boolean;
   autoClose?: boolean;
   taggedProject?: Exclude<DatabaseTicket['taggedProject'], null>;
-  closedBy?: Exclude<DatabaseTicket['taggedProject'], null>;
+  closedBy?: Exclude<DatabaseTicket['closedBy'], null>;
 }
 
 export const DatabaseCloseRequest = BaseDatabaseItem.extend({

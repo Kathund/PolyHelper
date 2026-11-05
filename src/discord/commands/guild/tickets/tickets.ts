@@ -58,6 +58,7 @@ class TicketsCommand extends DiscordCommand {
             .setDescription('The current ticket inactivity state')
             .addChoices({ name: 'Silenced', value: 'silenced' }, { name: 'Unsilenced', value: 'unsilenced' })
         )
+        .addUserOption((option) => option.setName('closed-by').setDescription('who closed the ticket'))
     )
     .addSubcommand((option) => option.setName('overview').setDescription('Overview of the tickets'))
     .setFlags(InteractionFlag.RequiresGuild)
@@ -81,7 +82,8 @@ class TicketsCommand extends DiscordCommand {
       pinned: pinState === null ? undefined : pinState === 'pinned',
       closed: state === null ? undefined : state === 'closed',
       inactivitySilenced: inactivityState === null ? undefined : inactivityState === 'silenced',
-      taggedProject: interaction.options.getString('tagged-github-repo') ?? undefined
+      taggedProject: interaction.options.getString('tagged-github-repo') ?? undefined,
+      closedBy: interaction.options.getUser('closed-by')?.id
     };
 
     const tickets = this.discord.application.database.getTickets({ ...search, limit: 25 });
