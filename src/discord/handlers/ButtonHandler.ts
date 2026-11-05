@@ -1,7 +1,6 @@
 import BasicInteractionHandler from '../private/BasicInteractionHandler.ts';
 import { type ButtonInteraction, MessageFlags } from 'discord.js';
 import { InteractionResponse } from '../../types/discord.ts';
-import { readdir } from 'node:fs/promises';
 import type DiscordButton from '../private/interactions/DiscordButton.ts';
 
 class ButtonHandler extends BasicInteractionHandler<ButtonInteraction, DiscordButton> {
@@ -22,14 +21,7 @@ class ButtonHandler extends BasicInteractionHandler<ButtonInteraction, DiscordBu
   }
 
   override async loadElements() {
-    this.elements.clear();
-    const buttonFiles = await readdir('./src/discord/buttons/', { recursive: true, encoding: 'utf-8' }).then((files) =>
-      files.filter((file) => file.endsWith('.ts'))
-    );
-    for (const file of buttonFiles) {
-      const button: DiscordButton = new (await import(`../buttons/${file}`)).default(this.discord);
-      button.metadata.ids.forEach((id) => this.elements.set(id, button));
-    }
+    await this.loadElementsGeneric('buttons');
     console.discord(`Successfully loaded ${this.elements.size} button(s).`);
   }
 }

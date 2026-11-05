@@ -7,7 +7,8 @@ import {
   type BaseMessageOptions,
   ButtonBuilder,
   ButtonStyle,
-  type ChatInputCommandInteraction
+  type ChatInputCommandInteraction,
+  MessageFlags
 } from 'discord.js';
 import { InteractionFlag, InteractionPermission, type InteractionWithGuild } from '../../../../types/discord.ts';
 import { TicketSearchResults } from '../../../private/ComponentHelper.ts';
@@ -87,7 +88,11 @@ class TicketsCommand extends DiscordCommand {
     };
 
     const tickets = this.discord.application.database.getTickets({ ...search, limit: 25 });
-    await interaction.followUp(TicketSearchResults(tickets, search));
+    await interaction.followUp({
+      components: TicketSearchResults(tickets, search),
+      flags: MessageFlags.IsComponentsV2,
+      allowedMentions: { parse: [] }
+    });
   }
 
   static getTicketsOverviewMessageData(panels: Panel[], closeRequests: CloseRequest[]): BaseMessageOptions {

@@ -19,7 +19,8 @@ import type {
   StringSelectMenuInteraction,
   TextBasedChannel,
   User,
-  UserContextMenuCommandInteraction
+  UserContextMenuCommandInteraction,
+  UserSelectMenuInteraction
 } from 'discord.js';
 import type { ConfigDiscordEmbedsColors } from './config.ts';
 import type { DevData, DevName } from './application.ts';
@@ -73,7 +74,11 @@ export type InteractionWithGuild<Interaction extends BaseInteraction> = Interact
 
 export type CommandInteraction = AutocompleteInteraction | ChatInputCommandInteraction | ContextMenuCommandInteraction;
 export type CustomIdInteraction =
-  ButtonInteraction | ModalMessageModalSubmitInteraction | ModalSubmitInteraction | StringSelectMenuInteraction;
+  | ButtonInteraction
+  | ModalMessageModalSubmitInteraction
+  | ModalSubmitInteraction
+  | StringSelectMenuInteraction
+  | UserSelectMenuInteraction;
 
 export type InteractionTypes = CommandInteraction | CustomIdInteraction;
 

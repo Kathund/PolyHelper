@@ -6,6 +6,7 @@ import MessageHandler from './handlers/MessageHandler.ts';
 import ModalHandler from './handlers/ModalHandler.ts';
 import PolyHelperError from '../private/error.ts';
 import StringSelectMenuHandler from './handlers/StringSelectMenuHandler.ts';
+import UserSelectMenuHandler from './handlers/UserSelectMenuHandler.ts';
 import {
   BaseInteraction,
   ChannelType,
@@ -41,6 +42,7 @@ class DiscordManager {
   readonly messageHandler: MessageHandler;
   readonly modalHandler: ModalHandler;
   readonly stringSelectMenuHandler: StringSelectMenuHandler;
+  readonly userSelectMenuHandler: UserSelectMenuHandler;
   client?: Client;
   guild?: Guild;
   constructor(readonly application: Application) {
@@ -51,6 +53,7 @@ class DiscordManager {
     this.messageHandler = new MessageHandler(this);
     this.modalHandler = new ModalHandler(this);
     this.stringSelectMenuHandler = new StringSelectMenuHandler(this);
+    this.userSelectMenuHandler = new UserSelectMenuHandler(this);
   }
 
   async connect() {
@@ -68,6 +71,7 @@ class DiscordManager {
     await this.buttonHandler.loadElements();
     await this.modalHandler.loadElements();
     await this.stringSelectMenuHandler.loadElements();
+    await this.userSelectMenuHandler.loadElements();
     this.client.on(Events.ClientReady, (client) => this.eventHandler.onReady(client));
     this.client.on(Events.MessageCreate, (message) =>
       this.messageHandler.onMessage(message).catch((e) => this.handleError(toError(e)))
@@ -108,6 +112,7 @@ class DiscordManager {
     if (interaction.isButton()) await this.buttonHandler.onInteraction(interaction);
     if (interaction.isModalSubmit()) await this.modalHandler.onInteraction(interaction);
     if (interaction.isStringSelectMenu()) await this.stringSelectMenuHandler.onInteraction(interaction);
+    if (interaction.isUserSelectMenu()) await this.userSelectMenuHandler.onInteraction(interaction);
     if (interaction.isContextMenuCommand()) await this.contextMenuHandler.onInteraction(interaction);
   }
 

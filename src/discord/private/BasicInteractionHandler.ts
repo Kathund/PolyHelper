@@ -1,3 +1,4 @@
+import BasicInteractionMetadata from './interactions/basic/BasicInteractionMetadata.ts';
 import PolyHelperError from '../../private/error.ts';
 import assert from 'node:assert';
 import { type BaseInteraction, Collection } from 'discord.js';
@@ -11,6 +12,7 @@ import {
   isPolyfrostTeamMember,
   isSupportMember
 } from '../../utils/discordUtils.ts';
+import { readdir } from 'node:fs/promises';
 import { toError } from '../../utils/miscUtils.ts';
 import type BasicInteractionData from './interactions/basic/BasicInteractionData.ts';
 import type DiscordManager from '../DiscordManager.ts';
@@ -62,6 +64,21 @@ abstract class BasicInteractionHandler<
       await element.execute(interaction);
     } catch (error) {
       await this.discord.handleError(toError(error), interaction, [], element.metadata);
+    }
+  }
+
+  protected async loadElementsGeneric(folder: string) {
+    this.elements.clear();
+    const files = await readdir(`./src/discord/${folder}/`, { recursive: true, encoding: 'utf-8' }).then((files) =>
+      files.filter((file) => file.endsWith('.ts'))
+    );
+    for (const file of files) {
+      const element: ElementData = new (await import(`../${folder}/${file}`)).default(this.discord);
+      if (!(element.metadata instanceof BasicInteractionMetadata)) {
+        console.warn(`Tried loading a generic element but it wasn\'t generic. ${file}`);
+        continue;
+      }
+      element.metadata.ids.forEach((id) => this.elements.set(id, element));
     }
   }
 

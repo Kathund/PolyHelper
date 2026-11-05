@@ -1,7 +1,6 @@
 import BasicInteractionHandler from '../private/BasicInteractionHandler.ts';
 import { InteractionResponse } from '../../types/discord.ts';
 import { MessageFlags, type StringSelectMenuInteraction } from 'discord.js';
-import { readdir } from 'node:fs/promises';
 import type DiscordStringSelectMenu from '../private/interactions/DiscordStringSelectMenu.ts';
 
 class StringSelectMenuHandler extends BasicInteractionHandler<StringSelectMenuInteraction, DiscordStringSelectMenu> {
@@ -22,17 +21,7 @@ class StringSelectMenuHandler extends BasicInteractionHandler<StringSelectMenuIn
   }
 
   async loadElements() {
-    this.elements.clear();
-    const stringSelectMenuFiles = await readdir('./src/discord/stringSelectMenus/', {
-      recursive: true,
-      encoding: 'utf-8'
-    }).then((files) => files.filter((file) => file.endsWith('.ts')));
-    for (const file of stringSelectMenuFiles) {
-      const stringSelectMenu: DiscordStringSelectMenu = new (await import(`../stringSelectMenus/${file}`)).default(
-        this.discord
-      );
-      stringSelectMenu.metadata.ids.forEach((id) => this.elements.set(id, stringSelectMenu));
-    }
+    await this.loadElementsGeneric('stringSelectMenus');
     console.discord(`Successfully loaded ${this.elements.size} string select menu(s).`);
   }
 }

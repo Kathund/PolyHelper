@@ -1,5 +1,4 @@
 import Application from '../../Application.ts';
-import EmbedHelper from './EmbedHelper.ts';
 import PolyHelperError from '../../private/error.ts';
 import {
   ActionRowBuilder,
@@ -15,6 +14,8 @@ import {
   RadioGroupBuilder,
   RadioGroupOptionBuilder,
   RoleSelectMenuBuilder,
+  SeparatorBuilder,
+  SeparatorSpacingSize,
   StringSelectMenuBuilder,
   StringSelectMenuOptionBuilder,
   TextDisplayBuilder,
@@ -299,10 +300,17 @@ export function SupportTeamModal(supportTeam?: SupportTeam | DatabaseSupportTeam
 
 export function PanelStringSelectMenu(
   panels: DatabasePanel[] | Panel[],
-  currentPanel?: DatabasePanel['id']
+  currentPanel?: DatabasePanel['id'],
+  maxOptions: number = 25
 ): StringSelectMenuBuilder {
+  const visiblePanels = panels.slice(0, maxOptions);
+  const selectedPanel = currentPanel ? panels.find((panel) => panel.id === currentPanel) : undefined;
+  if (selectedPanel && !visiblePanels.some((panel) => panel.id === selectedPanel.id) && maxOptions > 0) {
+    visiblePanels[maxOptions - 1] = selectedPanel;
+  }
+
   return new StringSelectMenuBuilder().setOptions(
-    panels.map((panel) =>
+    visiblePanels.map((panel) =>
       new StringSelectMenuOptionBuilder()
         .setLabel(panel.name)
         .setValue(panel.id)
@@ -313,137 +321,219 @@ export function PanelStringSelectMenu(
 
 export function GithubReposStringSelectMenu(
   repos: MinimalRepository[],
-  current?: MinimalRepository['name']
+  current?: MinimalRepository['name'],
+  maxOptions: number = 25
 ): StringSelectMenuBuilder {
-  return new StringSelectMenuBuilder().setOptions(
-    repos
-      .filter((repo) => !repo.archived)
-      .filter((repo) => !repo.fork)
-      .sort((a, b) => new Date(b.pushed_at).getTime() - new Date(a.pushed_at).getTime())
-      .slice(0, 25)
-      .map((repo) =>
-        new StringSelectMenuOptionBuilder()
-          .setLabel(repo.name)
-          .setValue(repo.name)
-          .setDefault(repo.name === current)
-      )
-  );
-}
+  const availableRepos = repos
+    .filter((repo) => !repo.archived && !repo.fork)
+    .sort((a, b) => new Date(b.pushed_at).getTime() - new Date(a.pushed_at).getTime());
+  const visibleRepos = availableRepos.slice(0, maxOptions);
+  const currentRepo = current ? availableRepos.find((repo) => repo.name === current) : undefined;
+  if (currentRepo && !visibleRepos.some((repo) => repo.name === currentRepo.name) && maxOptions > 0) {
+    visibleRepos[maxOptions - 1] = currentRepo;
+  }
 
-export function TicketSearchFilterModal(
-  search: TicketSearch,
-  panels: DatabasePanel[] | Panel[],
-  repos: MinimalRepository[]
-): ModalBuilder {
-  return new ModalBuilder().addLabelComponents(
-    new LabelBuilder()
-      .setLabel('Panel')
-      .setStringSelectMenuComponent(
-        PanelStringSelectMenu(panels, search.panelId)
-          .setCustomId('panelId')
-          .setMinValues(1)
-          .setMaxValues(1)
-          .setRequired(false)
-      ),
-    new LabelBuilder().setLabel('Owner').setUserSelectMenuComponent(
-      new UserSelectMenuBuilder()
-        .setCustomId('owner')
-        .setDefaultUsers(search.owner !== undefined ? [search.owner] : [])
-        .setMaxValues(1)
-        .setMinValues(1)
-        .setRequired(false)
-    ),
-    new LabelBuilder()
-      .setLabel('Tagged Project')
-      .setStringSelectMenuComponent(
-        GithubReposStringSelectMenu(repos, search.taggedProject)
-          .setCustomId('taggedProject')
-          .setMinValues(1)
-          .setMaxValues(1)
-          .setRequired(false)
-      ),
-    new LabelBuilder().setLabel('Pin State').setRadioGroupComponent(
-      new RadioGroupBuilder().setCustomId('pinned').setOptions(
-        new RadioGroupOptionBuilder()
-          .setLabel('Any')
-          .setValue('any')
-          .setDefault(search.pinned === undefined),
-        new RadioGroupOptionBuilder()
-          .setLabel('Pinned')
-          .setValue('true')
-          .setDefault(search.pinned === true),
-        new RadioGroupOptionBuilder()
-          .setLabel('Unpinned')
-          .setValue('false')
-          .setDefault(search.pinned === false)
-      )
-    ),
-    new LabelBuilder().setLabel('Ticket State').setRadioGroupComponent(
-      new RadioGroupBuilder().setCustomId('closed').setOptions(
-        new RadioGroupOptionBuilder()
-          .setLabel('Any')
-          .setValue('any')
-          .setDefault(search.closed === undefined),
-        new RadioGroupOptionBuilder()
-          .setLabel('Open')
-          .setValue('false')
-          .setDefault(search.closed === false),
-        new RadioGroupOptionBuilder()
-          .setLabel('Closed')
-          .setValue('true')
-          .setDefault(search.closed === true)
-      )
+  return new StringSelectMenuBuilder().setOptions(
+    visibleRepos.map((repo) =>
+      new StringSelectMenuOptionBuilder()
+        .setLabel(repo.name)
+        .setValue(repo.name)
+        .setDefault(repo.name === current)
     )
   );
 }
 
-export function TicketSearchResults(tickets: Ticket[], search: TicketSearch): BaseMessageOptions {
-  const embed = new EmbedHelper()
-    .setTitle('Ticket Search')
-    .setDescription(`Found **${tickets.length} ticket(s)** with the following filter(s)`);
+export function createStringFilter(
+  customId: string,
+  placeholder: string,
+  options: { label: string; value: string; selected?: boolean }[]
+): ActionRowBuilder<StringSelectMenuBuilder> {
+  return new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(
+    new StringSelectMenuBuilder()
+      .setCustomId(customId)
+      .setPlaceholder(placeholder)
+      .setMinValues(1)
+      .setMaxValues(1)
+      .setOptions(
+        options.map(({ label, value, selected }) =>
+          new StringSelectMenuOptionBuilder().setLabel(label).setValue(value).setDefault(selected)
+        )
+      )
+  );
+}
+
+export function createBooleanFilter(
+  customId: string,
+  placeholder: string,
+  value: boolean | undefined,
+  labels: { true: string; false: string; unspecified: string }
+): ActionRowBuilder<StringSelectMenuBuilder> {
+  return createStringFilter(customId, placeholder, [
+    { label: labels.unspecified, value: 'any', selected: value === undefined },
+    { label: labels.true, value: 'true', selected: value === true },
+    { label: labels.false, value: 'false', selected: value === false }
+  ]);
+}
+
+export function getSearchContainer(
+  search: TicketSearch,
+  panels: DatabasePanel[] | Panel[],
+  repos: MinimalRepository[],
+  searchId: string
+): PatchedContainerBuilder {
+  return new PatchedContainerBuilder()
+    .addTextDisplayComponents(
+      new TextDisplayBuilder().setContent(
+        '## Ticket Search Filters\nChoose filters, then select **Apply Filters** to run the search.'
+      )
+    )
+    .addSeparatorComponents(new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small).setDivider(true))
+    .addTextDisplayComponents(new TextDisplayBuilder().setContent('Panel'))
+    .addActionRowComponents(
+      new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(
+        PanelStringSelectMenu(panels, search.panelId, 24)
+          .setCustomId(`ticketSearchFilterSelect:${searchId}:panelId`)
+          .setPlaceholder('Panel')
+          .setMinValues(1)
+          .setMaxValues(1)
+          .addOptions(
+            new StringSelectMenuOptionBuilder()
+              .setLabel('Any Panel')
+              .setValue('__any__')
+              .setDefault(search.panelId === undefined)
+          )
+      )
+    )
+    .addSeparatorComponents(new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small).setDivider(true))
+    .addTextDisplayComponents(new TextDisplayBuilder().setContent('Ticket Owner'))
+    .addActionRowComponents(
+      new ActionRowBuilder<UserSelectMenuBuilder>().addComponents(
+        new UserSelectMenuBuilder()
+          .setCustomId(`ticketSearchFilterUser:${searchId}:owner`)
+          .setPlaceholder('Owner')
+          .setDefaultUsers(search.owner !== undefined ? [search.owner] : [])
+          .setMaxValues(1)
+          .setMinValues(0)
+      )
+    )
+    .addSeparatorComponents(new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small).setDivider(true))
+    .addTextDisplayComponents(new TextDisplayBuilder().setContent('Tagged Project'))
+    .addActionRowComponents(
+      new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(
+        GithubReposStringSelectMenu(repos, search.taggedProject, 24)
+          .setCustomId(`ticketSearchFilterSelect:${searchId}:taggedProject`)
+          .setPlaceholder('Tagged Project')
+          .setMinValues(1)
+          .setMaxValues(1)
+          .addOptions(
+            new StringSelectMenuOptionBuilder()
+              .setLabel('Any Project')
+              .setValue('__any__')
+              .setDefault(search.taggedProject === undefined)
+          )
+      )
+    )
+    .addSeparatorComponents(new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small).setDivider(true))
+    .addTextDisplayComponents(new TextDisplayBuilder().setContent('Pin State'))
+    .addActionRowComponents(
+      createBooleanFilter(`ticketSearchFilterSelect:${searchId}:pinned`, 'Pin State', search.pinned, {
+        true: 'Pinned',
+        false: 'Unpinned',
+        unspecified: 'Unspecified'
+      })
+    )
+    .addSeparatorComponents(new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small).setDivider(true))
+    .addTextDisplayComponents(new TextDisplayBuilder().setContent('Ticket State'))
+    .addActionRowComponents(
+      createBooleanFilter(`ticketSearchFilterSelect:${searchId}:closed`, 'Ticket State', search.closed, {
+        true: 'Closed',
+        false: 'Open',
+        unspecified: 'Unspecified'
+      })
+    )
+    .addSeparatorComponents(new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small).setDivider(true))
+    .addTextDisplayComponents(new TextDisplayBuilder().setContent('Inactivity State'))
+    .addActionRowComponents(
+      createBooleanFilter(
+        `ticketSearchFilterSelect:${searchId}:inactivitySilenced`,
+        'Inactivity State',
+        search.inactivitySilenced,
+        { true: 'Silenced', false: 'Unsilenced', unspecified: 'Unspecified' }
+      )
+    )
+    .addSeparatorComponents(new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small).setDivider(true))
+    .addTextDisplayComponents(new TextDisplayBuilder().setContent('Closed By'))
+    .addActionRowComponents(
+      new ActionRowBuilder<UserSelectMenuBuilder>().addComponents(
+        new UserSelectMenuBuilder()
+          .setCustomId(`ticketSearchFilterUser:${searchId}:closedBy`)
+          .setPlaceholder('Closed By')
+          .setDefaultUsers(search.closedBy !== undefined ? [search.closedBy] : [])
+          .setMaxValues(1)
+          .setMinValues(0)
+      )
+    )
+    .addActionRowComponents(
+      new ActionRowBuilder<ButtonBuilder>().addComponents(
+        new ButtonBuilder()
+          .setCustomId(`ticketSearchApply:${searchId}`)
+          .setLabel('Apply Filters')
+          .setStyle(ButtonStyle.Primary)
+      )
+    );
+}
+
+export function TicketSearchResults(
+  tickets: Ticket[],
+  search: TicketSearch
+): NonNullable<BaseMessageOptions['components']> {
   const searchId = crypto.randomUUID();
   Application.cache.set<TicketSearch>(`ticket:search:${searchId}`, search);
 
-  if (search.pinned !== undefined) {
-    embed.addFields({ name: 'Pin State', value: search.pinned ? 'Pinned' : 'Unpinned' });
-  }
-  if (search.closed !== undefined) embed.addFields({ name: 'State', value: search.closed ? 'Closed' : 'Open' });
-  if (search.inactivitySilenced !== undefined) {
-    embed.addFields({ name: 'Inactivity State', value: search.inactivitySilenced ? 'Silenced' : 'Unsilenced' });
-  }
-  if (search.taggedProject) embed.addFields({ name: 'Tagged Project', value: search.taggedProject, format: 'Block' });
-  if (search.panelId) embed.addFields({ name: 'Panel Id', value: search.panelId, format: 'Block' });
-  if (search.owner) embed.addFields({ name: 'Owner', value: `<@${search.owner}> (${search.owner})` });
+  const filters = [
+    search.pinned !== undefined && `**Pin State:** ${search.pinned ? 'Pinned' : 'Unpinned'}`,
+    search.closed !== undefined && `**State:** ${search.closed ? 'Closed' : 'Open'}`,
+    search.inactivitySilenced !== undefined &&
+      `**Inactivity State:** ${search.inactivitySilenced ? 'Silenced' : 'Unsilenced'}`,
+    search.taggedProject && `**Tagged Project:** \`${search.taggedProject}\``,
+    search.panelId && `**Panel Id:** \`${search.panelId}\``,
+    search.owner && `**Owner:** <@${search.owner}> (${search.owner})`,
+    search.closedBy && `**Closed By:** <@${search.closedBy}> (${search.closedBy})`
+  ].filter((filter): filter is string => Boolean(filter));
 
-  return {
-    embeds: [embed],
-    components: [
-      new ActionRowBuilder<StringSelectMenuBuilder>().setComponents(
-        new StringSelectMenuBuilder()
-          .setCustomId('ticketsSearch')
-          .setPlaceholder(tickets.length === 0 ? 'No tickets found' : 'Select a ticket to view more')
-          .setDisabled(tickets.length === 0)
-          .setOptions(
-            tickets.length === 0
-              ? [new StringSelectMenuOptionBuilder().setLabel('No tickets found').setValue('nothing')]
-              : tickets.map((ticket) =>
-                  new StringSelectMenuOptionBuilder()
-                    .setLabel(`${ticket.name} - ${new Date(ticket.lastUpdated).toISOString().split('T')[0]}`)
-                    .setValue(ticket.id)
-                )
-          )
-      ),
-      new ActionRowBuilder<ButtonBuilder>().setComponents(
-        new ButtonBuilder()
-          .setCustomId(`ticketSearchFilter:${searchId}`)
-          .setLabel('Edit Filters')
-          .setStyle(ButtonStyle.Secondary),
-        new ButtonBuilder()
-          .setCustomId('joinTickets')
-          .setLabel('Join Found Ticket Threads')
-          .setStyle(ButtonStyle.Secondary)
-          .setDisabled(tickets.length === 0)
+  return [
+    new PatchedContainerBuilder().addTextDisplayComponents(
+      new TextDisplayBuilder().setContent(
+        ['## Ticket Search', `Found **${tickets.length} ticket(s)** with the following filter(s)`, ...filters].join(
+          '\n'
+        )
       )
-    ]
-  };
+    ),
+    new ActionRowBuilder<StringSelectMenuBuilder>().setComponents(
+      new StringSelectMenuBuilder()
+        .setCustomId('ticketsSearch')
+        .setPlaceholder(tickets.length === 0 ? 'No tickets found' : 'Select a ticket to view more')
+        .setDisabled(tickets.length === 0)
+        .setOptions(
+          tickets.length === 0
+            ? [new StringSelectMenuOptionBuilder().setLabel('No tickets found').setValue('nothing')]
+            : tickets.map((ticket) =>
+                new StringSelectMenuOptionBuilder()
+                  .setLabel(`${ticket.name} - ${new Date(ticket.lastUpdated).toISOString().split('T')[0]}`)
+                  .setValue(ticket.id)
+              )
+        )
+    ),
+    new ActionRowBuilder<ButtonBuilder>().setComponents(
+      new ButtonBuilder()
+        .setCustomId(`ticketSearchFilter:${searchId}`)
+        .setLabel('Edit Filters')
+        .setStyle(ButtonStyle.Secondary),
+      new ButtonBuilder()
+        .setCustomId('joinTickets')
+        .setLabel('Join Found Ticket Threads')
+        .setStyle(ButtonStyle.Secondary)
+        .setDisabled(tickets.length === 0)
+    )
+  ];
 }

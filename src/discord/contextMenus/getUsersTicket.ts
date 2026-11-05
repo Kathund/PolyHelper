@@ -1,6 +1,6 @@
 import DiscordContextMenu from '../private/interactions/contextMenus/DiscordContextMenu.ts';
 import DiscordContextMenuMetadata from '../private/interactions/contextMenus/DiscordContextMenuMetadata.ts';
-import { ApplicationCommandType, type ContextMenuCommandType } from 'discord.js';
+import { ApplicationCommandType, type ContextMenuCommandType, MessageFlags } from 'discord.js';
 import {
   InteractionFlag,
   InteractionResponse,
@@ -27,7 +27,10 @@ class GetUsersTicketContextMenu extends DiscordContextMenu<MessageAndUserContext
         ? interaction.targetMessage.author.id
         : interaction.targetUser.id;
     const tickets = this.discord.application.database.getTickets({ owner: ownerId, limit: 25 });
-    await interaction.followUp(TicketSearchResults(tickets, { owner: ownerId }));
+    await interaction.followUp({
+      ...TicketSearchResults(tickets, { owner: ownerId }),
+      flags: MessageFlags.IsComponentsV2
+    });
   }
 }
 

@@ -1,7 +1,6 @@
 import BasicInteractionHandler from '../private/BasicInteractionHandler.ts';
 import { InteractionResponse } from '../../types/discord.ts';
 import { MessageFlags, type ModalSubmitInteraction } from 'discord.js';
-import { readdir } from 'node:fs/promises';
 import type DiscordModal from '../private/interactions/DiscordModal.ts';
 
 class ModalHandler extends BasicInteractionHandler<ModalSubmitInteraction, DiscordModal> {
@@ -22,14 +21,7 @@ class ModalHandler extends BasicInteractionHandler<ModalSubmitInteraction, Disco
   }
 
   async loadElements() {
-    this.elements.clear();
-    const modalFiles = await readdir('./src/discord/modals/', { recursive: true, encoding: 'utf-8' }).then((files) =>
-      files.filter((file) => file.endsWith('.ts'))
-    );
-    for (const file of modalFiles) {
-      const modal: DiscordModal = new (await import(`../modals/${file}`)).default(this.discord);
-      modal.metadata.ids.forEach((id) => this.elements.set(id, modal));
-    }
+    await this.loadElementsGeneric('modals');
     console.discord(`Successfully loaded ${this.elements.size} modal(s).`);
   }
 }
