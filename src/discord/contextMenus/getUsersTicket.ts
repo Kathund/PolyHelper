@@ -28,8 +28,9 @@ class GetUsersTicketContextMenu extends DiscordContextMenu<MessageAndUserContext
         : interaction.targetUser.id;
     const tickets = this.discord.application.database.getTickets({ owner: ownerId, limit: 25 });
     await interaction.followUp({
-      ...TicketSearchResults(tickets, { owner: ownerId }),
-      flags: MessageFlags.IsComponentsV2
+      components: TicketSearchResults(tickets, { owner: ownerId }),
+      flags: MessageFlags.IsComponentsV2,
+      allowedMentions: { parse: [] }
     });
   }
 }
