@@ -29,7 +29,7 @@ import { readFileSync } from 'node:fs';
 import type Panel from '../../database/private/Panel.ts';
 import type SupportTeam from '../../database/private/SupportTeam.ts';
 import type Ticket from '../../database/private/Ticket.ts';
-import type { DatabaseCloseRequest, DatabasePanel, DatabaseSupportTeam } from '../../types/database.ts';
+import type { BaseDatabaseItem, DatabasePanel, DatabaseSupportTeam } from '../../types/database.ts';
 import type { MinimalRepository } from '../../types/github.ts';
 import type { TicketSearch } from '../../types/misc.ts';
 
@@ -130,7 +130,7 @@ export function BasicPanelModal(panel?: Panel | DatabasePanel) {
 
 export function SupportTeamStringSelectMenu(
   supportTeams: DatabaseSupportTeam[] | SupportTeam[],
-  supportTeam?: DatabaseSupportTeam['id']
+  supportTeam?: BaseDatabaseItem['id']
 ): StringSelectMenuBuilder {
   return new StringSelectMenuBuilder().setOptions(
     supportTeams.map((team) =>
@@ -253,7 +253,7 @@ export function TicketOpenOptionsPanelModal(panel?: Panel | DatabasePanel) {
     );
 }
 
-export function CloseRequestButtons(id: DatabaseCloseRequest['id'], disabled: boolean = false): ButtonBuilder[] {
+export function CloseRequestButtons(id: BaseDatabaseItem['id'], disabled: boolean = false): ButtonBuilder[] {
   return [
     new ButtonBuilder()
       .setLabel('Accept & Close')
@@ -300,7 +300,7 @@ export function SupportTeamModal(supportTeam?: SupportTeam | DatabaseSupportTeam
 
 export function PanelStringSelectMenu(
   panels: DatabasePanel[] | Panel[],
-  currentPanel?: DatabasePanel['id'],
+  currentPanel?: BaseDatabaseItem['id'],
   maxOptions: number = 25
 ): StringSelectMenuBuilder {
   const visiblePanels = panels.slice(0, maxOptions);

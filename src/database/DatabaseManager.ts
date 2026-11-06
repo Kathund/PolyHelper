@@ -5,6 +5,7 @@ import Panel from './private/Panel.ts';
 import PolyHelperError from '../private/error.ts';
 import SupportTeam from './private/SupportTeam.ts';
 import Ticket from './private/Ticket.ts';
+import TicketBlacklistUser from './private/TicketBlacklistUser.ts';
 import type Application from '../Application.ts';
 import type {
   BaseDatabaseItem,
@@ -13,8 +14,10 @@ import type {
   DatabasePanel,
   DatabaseSupportTeam,
   DatabaseTicket,
+  DatabaseTicketBlacklistUser,
   PanelSearchFilters,
-  RequiredDatabaseFields,
+  RequiredDatabaseTicketBlacklistUserFields,
+  RequiredDatabaseTicketFields,
   SupportTeamSearchFilters,
   TicketSearchFilters
 } from '../types/database.ts';
@@ -45,7 +48,7 @@ class DatabaseManager extends BasicDatabaseManager {
     return message;
   }
 
-  getPanelIds(): DatabasePanel['id'][] {
+  getPanelIds(): BaseDatabaseItem['id'][] {
     return this.db
       .prepare<[], Pick<DatabasePanel, 'id'>>('SELECT id FROM panels')
       .all()
@@ -75,8 +78,8 @@ class DatabaseManager extends BasicDatabaseManager {
       .map((data) => new Panel(data, this));
   }
 
-  getPanel(id: DatabasePanel['id']): Panel | undefined {
-    const data = this.db.prepare<[DatabasePanel['id']], DatabasePanel>('SELECT * FROM panels WHERE id = ?').get(id);
+  getPanel(id: BaseDatabaseItem['id']): Panel | undefined {
+    const data = this.db.prepare<[BaseDatabaseItem['id']], DatabasePanel>('SELECT * FROM panels WHERE id = ?').get(id);
     if (!data) return data;
     return new Panel(data, this);
   }
@@ -95,8 +98,8 @@ class DatabaseManager extends BasicDatabaseManager {
     return panel;
   }
 
-  async deletePanel(id: DatabasePanel['id']) {
-    this.db.prepare<DatabasePanel['id']>('DELETE FROM panels WHERE id = ?').run(id);
+  async deletePanel(id: BaseDatabaseItem['id']) {
+    this.db.prepare<BaseDatabaseItem['id']>('DELETE FROM panels WHERE id = ?').run(id);
     const message = await this.getPanelsMessage();
     await DebugTicketsCommand.updatePanelsMessage(message);
   }
@@ -117,8 +120,10 @@ class DatabaseManager extends BasicDatabaseManager {
     return newPanel;
   }
 
-  getTicket(id: DatabaseTicket['id']): Ticket | undefined {
-    const data = this.db.prepare<[DatabaseTicket['id']], DatabaseTicket>('SELECT * FROM tickets WHERE id = ?').get(id);
+  getTicket(id: BaseDatabaseItem['id']): Ticket | undefined {
+    const data = this.db
+      .prepare<[BaseDatabaseItem['id']], DatabaseTicket>('SELECT * FROM tickets WHERE id = ?')
+      .get(id);
     if (!data) return data;
     return new Ticket(data, this);
   }
@@ -169,11 +174,11 @@ class DatabaseManager extends BasicDatabaseManager {
     return new Ticket(data, this);
   }
 
-  insertTicket(data: Pick<DatabaseTicket, RequiredDatabaseFields>): Ticket {
+  insertTicket(data: Pick<DatabaseTicket, RequiredDatabaseTicketFields>): Ticket {
     const id = crypto.randomUUID();
     const timestamp = Date.now();
     this.db
-      .prepare<Pick<DatabaseTicket, keyof BaseDatabaseItem | RequiredDatabaseFields | 'openingTimestamp'>>(
+      .prepare<Pick<DatabaseTicket, keyof BaseDatabaseItem | RequiredDatabaseTicketFields | 'openingTimestamp'>>(
         'INSERT INTO tickets (id, lastUpdated, name, panelId, threadId, owner, startingMessageId, openingTimestamp) VALUES (@id, @lastUpdated, @name, @panelId, @threadId, @owner, @startingMessageId, @openingTimestamp)'
       )
       .run({ ...data, id, lastUpdated: timestamp, openingTimestamp: timestamp });
@@ -193,9 +198,9 @@ class DatabaseManager extends BasicDatabaseManager {
     return new Ticket({ ...data, lastUpdated }, this);
   }
 
-  getCloseRequest(id: DatabaseCloseRequest['id']): CloseRequest | undefined {
+  getCloseRequest(id: BaseDatabaseItem['id']): CloseRequest | undefined {
     const data = this.db
-      .prepare<[DatabaseCloseRequest['id']], DatabaseCloseRequest>('SELECT * FROM closeRequests WHERE id = ?')
+      .prepare<[BaseDatabaseItem['id']], DatabaseCloseRequest>('SELECT * FROM closeRequests WHERE id = ?')
       .get(id);
     if (!data) return data;
     return new CloseRequest(data, this);
@@ -251,15 +256,15 @@ class DatabaseManager extends BasicDatabaseManager {
     return new CloseRequest({ ...data, lastUpdated }, this);
   }
 
-  async deleteCloseRequest(id: DatabaseCloseRequest['id']) {
+  async deleteCloseRequest(id: BaseDatabaseItem['id']) {
     const closeRequest = this.getCloseRequest(id);
     if (closeRequest) await closeRequest.updateMessageButtons(true);
-    this.db.prepare<DatabaseCloseRequest['id']>('DELETE FROM closeRequests WHERE id = ?').run(id);
+    this.db.prepare<BaseDatabaseItem['id']>('DELETE FROM closeRequests WHERE id = ?').run(id);
   }
 
-  getSupportTeam(id: DatabaseSupportTeam['id']): SupportTeam | undefined {
+  getSupportTeam(id: BaseDatabaseItem['id']): SupportTeam | undefined {
     const data = this.db
-      .prepare<[DatabaseSupportTeam['id']], DatabaseSupportTeam>('SELECT * FROM supportTeams WHERE id = ?')
+      .prepare<[BaseDatabaseItem['id']], DatabaseSupportTeam>('SELECT * FROM supportTeams WHERE id = ?')
       .get(id);
     if (!data) return data;
     return new SupportTeam(data, this);
@@ -307,12 +312,71 @@ class DatabaseManager extends BasicDatabaseManager {
     return new SupportTeam({ ...data, lastUpdated }, this);
   }
 
-  async deleteSupportTeam(id: DatabaseSupportTeam['id']) {
+  async deleteSupportTeam(id: BaseDatabaseItem['id']) {
     const supportTeam = this.getSupportTeam(id);
     if (supportTeam) {
       for (const panel of supportTeam.panels) await this.updatePanel({ ...panel.toJSON(), supportTeamId: null });
     }
-    this.db.prepare<DatabaseCloseRequest['id']>('DELETE FROM supportTeams WHERE id = ?').run(id);
+    this.db.prepare<BaseDatabaseItem['id']>('DELETE FROM supportTeams WHERE id = ?').run(id);
+  }
+
+  getTicketBlacklistUser(id: BaseDatabaseItem['id']): TicketBlacklistUser | undefined {
+    const data = this.db
+      .prepare<[BaseDatabaseItem['id']], DatabaseTicketBlacklistUser>('SELECT * FROM ticketBlacklistUsers WHERE id = ?')
+      .get(id);
+    if (!data) return data;
+    return new TicketBlacklistUser(data, this);
+  }
+
+  getTicketBlacklistUserByUser(user: TicketBlacklistUser['user']): TicketBlacklistUser | undefined {
+    const data = this.db
+      .prepare<[TicketBlacklistUser['user']], DatabaseTicketBlacklistUser>(
+        'SELECT * FROM ticketBlacklistUsers WHERE user = ? ORDER BY active DESC, lastUpdated DESC'
+      )
+      .get(user);
+    if (!data) return data;
+    return new TicketBlacklistUser(data, this);
+  }
+
+  async insertTicketBlacklistUser(
+    data: Pick<DatabaseTicketBlacklistUser, RequiredDatabaseTicketBlacklistUserFields>
+  ): Promise<TicketBlacklistUser> {
+    const id = crypto.randomUUID();
+    this.db
+      .prepare<Pick<DatabaseTicketBlacklistUser, keyof BaseDatabaseItem | RequiredDatabaseTicketBlacklistUserFields>>(
+        'INSERT INTO ticketBlacklistUsers (id, lastUpdated, user, reason, addedBy) VALUES (@id, @lastUpdated, @user, @reason, @addedBy)'
+      )
+      .run({ ...data, id, lastUpdated: Date.now() });
+    const parsed = this.getTicketBlacklistUser(id);
+    if (!parsed) throw new PolyHelperError('Something went wrong with inserting this ticket blacklist user');
+    const message = await (await this.application.discord.getChannel('botLogs')).send(parsed.toMessageData());
+    return this.updateTicketBlacklistUser({ ...parsed.toJSON(), logMessageId: message.id });
+  }
+
+  updateTicketBlacklistUser(data: Omit<DatabaseTicketBlacklistUser, 'lastUpdated'>): TicketBlacklistUser {
+    const lastUpdated: BaseDatabaseItem['lastUpdated'] = Date.now();
+    const update = this.db
+      .prepare<DatabaseTicketBlacklistUser>(
+        'UPDATE ticketBlacklistUsers SET lastUpdated = @lastUpdated, user = @user, reason = @reason, addedBy = @addedBy, active = @active, removedReason = @removedReason, removedBy = @removedBy, logMessageId = @logMessageId WHERE id = @id'
+      )
+      .run({ ...data, lastUpdated });
+    if (update.changes === 0) throw new PolyHelperError('Could not find this ticket blacklist user?');
+    return new TicketBlacklistUser({ ...data, lastUpdated }, this);
+  }
+
+  async removeTicketBlacklistUser(data: Pick<DatabaseTicketBlacklistUser, 'id' | 'removedReason' | 'removedBy'>) {
+    const ticketBlacklistUser = this.getTicketBlacklistUser(data.id);
+    if (!ticketBlacklistUser) throw new PolyHelperError('Could not find this ticket blacklist user?');
+    const updated = this.updateTicketBlacklistUser({ ...ticketBlacklistUser.toJSON(), ...data, active: 0 });
+    const logMessage = await updated.getLogMessage();
+    let message: Message;
+    if (logMessage) {
+      await logMessage.edit(updated.toMessageData());
+      message = await logMessage.reply({ ...updated.toMessageData(), content: 'Blacklist Removed' });
+    } else {
+      message = await (await this.application.discord.getChannel('botLogs')).send(updated.toMessageData());
+    }
+    return this.updateTicketBlacklistUser({ ...updated.toJSON(), logMessageId: message.id });
   }
 }
 

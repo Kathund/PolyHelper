@@ -14,6 +14,7 @@ abstract class DiscordButton extends BasicInteractionData<ButtonInteraction> {
     if (type === 'panel') data = this.discord.application.database.getPanel(id);
     if (type === 'supportTeam') data = this.discord.application.database.getSupportTeam(id);
     if (type === 'ticket') data = this.discord.application.database.getTicket(id);
+    if (type === 'ticketBlacklistUser') data = this.discord.application.database.getTicketBlacklistUser(id);
     if (!data) throw new PolyHelperError(`Could not find this ${type} data`);
     return data;
   }

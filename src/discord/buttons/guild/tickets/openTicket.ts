@@ -45,6 +45,19 @@ class OpenTicketButton extends DiscordButton {
       });
     }
 
+    const blacklist = this.discord.application.database.getTicketBlacklistUserByUser(interaction.user.id);
+    if (blacklist?.active) {
+      return await interaction.followUp({
+        embeds: [
+          new EmbedHelper()
+            .setColor('Red')
+            .setTitle('Blacklisted')
+            .setDescription('You are blacklisted from opening tickets')
+            .addFields({ name: 'Reason', value: blacklist.reason, format: 'Block' })
+        ]
+      });
+    }
+
     const channel = await this.discord.application.discord.getSupportChannel();
     const auditLogReason = `Ticket opened by ${getUserDisplayName(interaction.user)}`;
     const thread = await channel.threads.create({

@@ -11,11 +11,8 @@ class SupportTeam extends BaseParsedDatabaseItem<DatabaseSupportTeam> {
   readonly name: DatabaseSupportTeam['name'];
   readonly supportRole: DatabaseSupportTeam['supportRole'];
   readonly ticketPingRole: DatabaseSupportTeam['ticketPingRole'];
-  constructor(
-    data: DatabaseSupportTeam,
-    private readonly manager: DatabaseManager
-  ) {
-    super(data);
+  constructor(data: DatabaseSupportTeam, manager: DatabaseManager) {
+    super(data, manager);
     this.name = data.name;
     this.supportRole = data.supportRole;
     this.ticketPingRole = data.ticketPingRole;
@@ -66,16 +63,7 @@ class SupportTeam extends BaseParsedDatabaseItem<DatabaseSupportTeam> {
         new ActionRowBuilder<ButtonBuilder>().addComponents(
           new ButtonBuilder().setLabel('Edit').setStyle(ButtonStyle.Secondary).setCustomId(`editSupportTeam:${this.id}`)
         ),
-        new ActionRowBuilder<ButtonBuilder>().addComponents(
-          new ButtonBuilder()
-            .setLabel('Refresh')
-            .setStyle(ButtonStyle.Secondary)
-            .setCustomId(`refreshData:supportTeam:${this.id}`),
-          new ButtonBuilder()
-            .setLabel('Export JSON')
-            .setStyle(ButtonStyle.Secondary)
-            .setCustomId(`exportData:supportTeam:${this.id}`)
-        )
+        this.getRefreshExportRow('supportTeam')
       ]
     };
   }

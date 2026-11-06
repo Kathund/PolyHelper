@@ -1,18 +1,10 @@
 import BaseParsedDatabaseItem from './BaseParsedDatabaseItem.ts';
 import PolyHelperError from '../../private/error.ts';
-import {
-  ActionRowBuilder,
-  type BaseMessageOptions,
-  ButtonBuilder,
-  ButtonStyle,
-  GuildMember,
-  type Message
-} from 'discord.js';
+import { ActionRowBuilder, type BaseMessageOptions, ButtonBuilder, GuildMember, type Message } from 'discord.js';
 import { CloseRequestButtons } from '../../discord/private/ComponentHelper.ts';
 import type DatabaseManager from '../DatabaseManager.ts';
 import type EmbedHelper from '../../discord/private/EmbedHelper.ts';
 import type Ticket from './Ticket.ts';
-import type { AutocompleteOption } from '../../types/discord.ts';
 import type { DatabaseCloseRequest } from '../../types/database.ts';
 
 class CloseRequest extends BaseParsedDatabaseItem<DatabaseCloseRequest> {
@@ -21,11 +13,8 @@ class CloseRequest extends BaseParsedDatabaseItem<DatabaseCloseRequest> {
   readonly reason: DatabaseCloseRequest['reason'];
   readonly closer: DatabaseCloseRequest['closer'];
   readonly autoClose: DatabaseCloseRequest['autoClose'];
-  constructor(
-    data: DatabaseCloseRequest,
-    private readonly manager: DatabaseManager
-  ) {
-    super(data);
+  constructor(data: DatabaseCloseRequest, manager: DatabaseManager) {
+    super(data, manager);
     this.ticketId = data.ticketId;
     this.messageId = data.messageId;
     this.reason = data.reason;
@@ -53,13 +42,8 @@ class CloseRequest extends BaseParsedDatabaseItem<DatabaseCloseRequest> {
     });
   }
 
-  async getDiscord(): Promise<GuildMember> {
-    if (!this.manager.application.discord.isGuildReady()) {
-      await this.manager.application.discord.loadGuild();
-      throw new PolyHelperError("The discord server isn't ready. Please try again later");
-    }
-
-    return await this.manager.application.discord.guild.members.fetch(this.closer);
+  async getCloserDiscord(): Promise<GuildMember> {
+    return await this.getGuildMember(this.closer);
   }
 
   override toEmbed(): EmbedHelper {
@@ -80,25 +64,7 @@ class CloseRequest extends BaseParsedDatabaseItem<DatabaseCloseRequest> {
   }
 
   override toMessageData(): BaseMessageOptions {
-    return {
-      embeds: [this.toEmbed()],
-      components: [
-        new ActionRowBuilder<ButtonBuilder>().addComponents(
-          new ButtonBuilder()
-            .setLabel('Refresh')
-            .setStyle(ButtonStyle.Secondary)
-            .setCustomId(`refreshData:closeRequest:${this.id}`),
-          new ButtonBuilder()
-            .setLabel('Export JSON')
-            .setStyle(ButtonStyle.Secondary)
-            .setCustomId(`exportData:ticket:${this.id}`)
-        )
-      ]
-    };
-  }
-
-  override toAutocompleteOption(): AutocompleteOption {
-    return { name: this.id, value: this.id };
+    return { embeds: [this.toEmbed()], components: [this.getRefreshExportRow('closeRequest')] };
   }
 
   override toJSON(): DatabaseCloseRequest {

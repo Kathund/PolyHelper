@@ -23,7 +23,7 @@ class CheckCloseRequestsScript extends BasicScript {
             new EmbedHelper().setTitle('Closing').setDescription('This close request has expired. Auto-closing...')
           ]
         });
-        const guildMember = await closeRequest.getDiscord();
+        const guildMember = await closeRequest.getCloserDiscord();
         await ticket.close({ reason: closeRequest.reason, executor: guildMember.user });
       } catch (error) {
         this.scripts.application.logError(toError(error), [

@@ -66,7 +66,7 @@ export const DatabaseTicket = BaseDatabaseItem.extend({
   closed: DatabaseBoolean
 });
 export type DatabaseTicket = zod.infer<typeof DatabaseTicket>;
-export type RequiredDatabaseFields = 'name' | 'panelId' | 'threadId' | 'owner' | 'startingMessageId';
+export type RequiredDatabaseTicketFields = 'name' | 'panelId' | 'threadId' | 'owner' | 'startingMessageId';
 
 export interface TicketSearchFilters extends DatabaseSearchFilters<'OpeningTimestamp' | 'LastMessageTimestamp'> {
   panelId?: DatabaseTicket['panelId'];
@@ -105,4 +105,17 @@ export interface SupportTeamSearchFilters extends DatabaseSearchFilters {
   ticketPingRole?: DatabaseSupportTeam['ticketPingRole'];
 }
 
-export type DatabaseItem = DatabaseCloseRequest | DatabasePanel | DatabaseSupportTeam | DatabaseTicket;
+export const DatabaseTicketBlacklistUser = BaseDatabaseItem.extend({
+  user: zod.string(),
+  reason: zod.string(),
+  addedBy: zod.string(),
+  active: DatabaseBoolean,
+  removedReason: zod.string().nullable(),
+  removedBy: zod.string().nullable(),
+  logMessageId: zod.string().nullable()
+});
+export type DatabaseTicketBlacklistUser = zod.infer<typeof DatabaseTicketBlacklistUser>;
+export type RequiredDatabaseTicketBlacklistUserFields = 'user' | 'reason' | 'addedBy';
+
+export type DatabaseItem =
+  DatabaseCloseRequest | DatabasePanel | DatabaseSupportTeam | DatabaseTicket | DatabaseTicketBlacklistUser;

@@ -40,11 +40,8 @@ class Ticket extends BaseParsedDatabaseItem<DatabaseTicket> {
   readonly closedBy: DatabaseTicket['closedBy'];
   readonly closedReason: DatabaseTicket['closedReason'];
   readonly #closed: DatabaseTicket['closed'];
-  constructor(
-    data: DatabaseTicket,
-    private readonly manager: DatabaseManager
-  ) {
-    super(data);
+  constructor(data: DatabaseTicket, manager: DatabaseManager) {
+    super(data, manager);
     this.panelId = data.panelId;
     this.threadId = data.threadId;
     this.owner = data.owner;
@@ -79,7 +76,7 @@ class Ticket extends BaseParsedDatabaseItem<DatabaseTicket> {
     return panel;
   }
 
-  async getDiscord(): Promise<GuildMember> {
+  async getOwnerDiscord(): Promise<GuildMember> {
     if (!this.manager.application.discord.isGuildReady()) {
       await this.manager.application.discord.loadGuild();
       throw new PolyHelperError("The discord server isn't ready. Please try again later");
@@ -190,7 +187,7 @@ class Ticket extends BaseParsedDatabaseItem<DatabaseTicket> {
     const thread = await this.getThread();
 
     if (options.shouldReplaceVariables !== false) {
-      const discord = await this.getDiscord();
+      const discord = await this.getOwnerDiscord();
       if (options.name === undefined && options.shouldReplaceVariables) {
         name = this.panel.parseTicketName({ user: discord.user, shouldReplaceVariables: true });
       }
@@ -220,7 +217,7 @@ class Ticket extends BaseParsedDatabaseItem<DatabaseTicket> {
 
   async mentionOwnerInThread(message: string = '') {
     const thread = await this.getThread();
-    const user = await this.getDiscord();
+    const user = await this.getOwnerDiscord();
     await thread.send({ content: `<@${user.user.id}>\n${message}`.trim() });
   }
 
@@ -355,7 +352,7 @@ class Ticket extends BaseParsedDatabaseItem<DatabaseTicket> {
     embed.addFields({ name: '_ _', value: 'Please accept or deny using the buttons below.' });
     const id = crypto.randomUUID();
     const thread = await this.getThread();
-    const user = await this.getDiscord().catch(() => null);
+    const user = await this.getOwnerDiscord().catch(() => null);
     if (user === null) throw new PolyHelperError('Could not fetch the ticket owner. They most likely have left');
     const message = await thread.send({
       content: `Hey <@${user.user.id}>`,
@@ -430,16 +427,7 @@ class Ticket extends BaseParsedDatabaseItem<DatabaseTicket> {
             .setStyle(ButtonStyle.Success)
             .setCustomId(`joinThread:${this.threadId}`)
         ),
-        new ActionRowBuilder<ButtonBuilder>().addComponents(
-          new ButtonBuilder()
-            .setLabel('Refresh')
-            .setStyle(ButtonStyle.Secondary)
-            .setCustomId(`refreshData:ticket:${this.id}`),
-          new ButtonBuilder()
-            .setLabel('Export JSON')
-            .setStyle(ButtonStyle.Secondary)
-            .setCustomId(`exportData:ticket:${this.id}`)
-        )
+        this.getRefreshExportRow('ticket')
       ]
     };
   }

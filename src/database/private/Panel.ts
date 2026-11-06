@@ -7,7 +7,7 @@ import { replaceVariables } from '../../utils/stringUtils.ts';
 import type DatabaseManager from '../DatabaseManager.ts';
 import type SupportTeam from './SupportTeam.ts';
 import type { AutocompleteOption } from '../../types/discord.ts';
-import type { DatabasePanel, TicketSearchFilters } from '../../types/database.ts';
+import type { BaseDatabaseItem, DatabasePanel, TicketSearchFilters } from '../../types/database.ts';
 import type { TemplatePrimitive } from '../../types/misc.ts';
 
 class Panel extends BaseParsedDatabaseItem<DatabasePanel> {
@@ -27,11 +27,8 @@ class Panel extends BaseParsedDatabaseItem<DatabasePanel> {
   readonly #pingSupportTeamOnOpen: DatabasePanel['pingSupportTeamOnOpen'];
   readonly supportTeamId: DatabasePanel['supportTeamId'];
   readonly #enabled: DatabasePanel['enabled'];
-  constructor(
-    data: DatabasePanel,
-    private readonly manager: DatabaseManager
-  ) {
-    super(data);
+  constructor(data: DatabasePanel, manager: DatabaseManager) {
+    super(data, manager);
     this.name = data.name;
     this.title = data.title;
     this.description = data.description;
@@ -96,7 +93,7 @@ class Panel extends BaseParsedDatabaseItem<DatabasePanel> {
   }
 
   getOverviewFields(): {
-    id: DatabasePanel['id'];
+    id: BaseDatabaseItem['id'];
     name: DatabasePanel['name'];
     enabled: boolean;
     tickets: number;
@@ -161,19 +158,11 @@ class Panel extends BaseParsedDatabaseItem<DatabasePanel> {
             .setStyle(ButtonStyle.Secondary)
             .setLabel('Edit Opening Message Options')
         ),
-        new ActionRowBuilder<ButtonBuilder>().addComponents(
+        this.getRefreshExportRow('panel').addComponents(
           new ButtonBuilder()
             .setLabel('Preview Opening Message')
             .setStyle(ButtonStyle.Secondary)
-            .setCustomId(`panelPreviewOpeningMessage:${this.id}`),
-          new ButtonBuilder()
-            .setLabel('Refresh')
-            .setStyle(ButtonStyle.Secondary)
-            .setCustomId(`refreshData:panel:${this.id}`),
-          new ButtonBuilder()
-            .setLabel('Export JSON')
-            .setStyle(ButtonStyle.Secondary)
-            .setCustomId(`exportData:panel:${this.id}`)
+            .setCustomId(`panelPreviewOpeningMessage:${this.id}`)
         )
       ]
     };
