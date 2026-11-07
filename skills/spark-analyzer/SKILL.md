@@ -31,6 +31,13 @@ audit and suspicious GL calls. Then find the cause in code, not in guesses.
   `.bin` and pass the path.
 - Last resort if parsing fails: `https://spark.lucko.me/<id>?raw=1&full=true`
   returns JSON with named keys.
+- The upload has runtime names. Like the web viewer, the script picks mappings from
+  the loader and MC version and downloads them from
+  [spark-mappings](https://github.com/lucko/spark-mappings): Yarn on Fabric up to
+  1.21.11, MCP on Forge, Mojang (MCP before 1.16) on Bukkit/Paper. The header's
+  `mappings=` says which. 26.1+ is unobfuscated and Polyfrost's spark fork uploads
+  1.8.9 Ornithe profiles in Feather names, so those show `none`. If the download
+  fails, names stay obfuscated (`class_761.method_62214`) and the script says so.
 
 ## Usage
 
@@ -50,14 +57,17 @@ side-by-side table.
   caller chain; comma-separate patterns; `--callers-depth N` (4).
 - `--hook-min PCT`: smallest hook in the hook audit (1.0).
 - `--mods`: the full loaded-mod list with versions.
+- `--mappings TYPE`: `auto` (default), `none` for raw names, or a spark-mappings id
+  such as `yarn-1_21_11` or `mcp-1_20` (ids are in
+  `https://spark-mappings.lucko.me/dist/mappings.json`).
 - `--json`: everything, machine-readable.
 
 ## Workflow
 
 Do these in order. Don't skip to a verdict.
 
-1. **Header and `system:` line.** Note the CPU (process and system-wide usage),
-   RAM, swap, heap and GC, and every
+1. **Header and `system:` line.** Note the OS, CPU (process and system-wide usage),
+   RAM, swap (`commit` on Windows), heap and GC, and every
    `hint:` line. Hints are inference (spark records no GPU), so use them to
    weigh findings, never as the finding.
 2. **By-mod table.** Self-time only, so it hides cost that lands in natives,
@@ -80,6 +90,10 @@ Do these in order. Don't skip to a verdict.
 - **Percentages are of the thread's sampled time** (`ThreadNode.times`, shown as
   "Xs sampled"). That can be less than `dur=`: the Java sampler records time only
   for the samples it takes. Percentages compare across profiles; raw ms don't.
+- **Names follow the profile's mappings.** Fabric up to 1.21.11 reads in Yarn
+  (`MinecraftClient`, `WorldRenderer.render`, `FrameGraphBuilder.run`), not Mojmap.
+  Translate with `minecraft-dev`'s `find_mapping` before searching Mojmap source, and
+  pass Yarn names to `--tree` / `--callers`.
 - **Idle frames** (`park`, `epoll`, `mach_msg2_trap`, ...) are in the
   denominator. Lots of idle means headroom.
 - **Self-time goes to the owning mod.** Mixins merged into vanilla classes are
@@ -103,8 +117,6 @@ Do these in order. Don't skip to a verdict.
   top frame, not a mod cost.
 - **Load-time or GPU-only mods** (shader patchers, resource-pack mods) read ~0 CPU.
   That means "not costing render-thread CPU", not "doing nothing".
-- **Windows swap figures are misleading.** `swap.used` is committed memory and
-  `swap.total` the commit limit, not the page file.
 - **`ALLOCATION profile`** means every figure is bytes allocated, not time.
 
 ## Comparing two profiles
@@ -130,14 +142,30 @@ Do these in order. Don't skip to a verdict.
 - Hardware limits come last, after the pass-level waste.
 - Keep it tight. Surface the mods and passes that matter, not every row.
 
+## What to avoid
+
+- Mod counts tend to be heavily inflated; for example, "400 mods" often includes
+  100+ libraries. Generic "trim the modpack" suggestions are almost never
+  helpful; say what should be trimmed or omit the suggestion.
+- When asked to compare profiles from two different clients/launchers, do not
+  suggest loading the same set of mods into both for a "fairer comparison". The
+  launcher is rarely the bottleneck; focus on comparing the modpacks as-is
+  first.
+- Java runtime (Microsoft/Mojang, Adoptium, Azul, etc.) is unlikely to make a
+  big difference and generally should not be a top suspect, but Microsoft/Mojang
+  Java may have Minecraft-specific optimizations.
+- A suggestion to lower render distance should be substantiated, not thrown
+  around as generic advice. It is often a step users themselves already try, and
+  spark doesn't record it, so at best it can be roughly inferred.
+
 ## Finding mod source
 
 In this order:
-1. A local checkout. Polyfrost mods (Polydium, OneConfig and others) are under
-   `D:\Development\Projects\Teams\Polyfrost\`; search there first.
-2. The mod's GitHub repo (`gh api`, `gh search code`), found from its Modrinth page.
-3. The jar, via the `minecraft-dev` MCP (`decompile_mod_jar`, `search_mod_code`),
-   when you know the jar's path.
+1. A local checkout, if available.
+2. The mod's GitHub repo (`gh api`, `gh search code`), found from its Modrinth
+   page.
+3. The jar, via the `minecraft-dev` MCP or CLI (`decompile_mod_jar`,
+   `search_mod_code`), when you know its path.
 
 Read the branch or tag that matches the profile's Minecraft version.
 
