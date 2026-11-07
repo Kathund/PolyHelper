@@ -76,7 +76,7 @@ function title(job: SparkJob): string {
 }
 
 function profileLine(result: SparkResult | null, job: SparkJob): string {
-  const parts: string[] = [job.mode];
+  const parts: string[] = [job.profile.sparkId, job.mode];
   const prepass = result?.prepass;
   if (prepass?.mcVersion) parts.push(`MC ${prepass.mcVersion}`);
   if (prepass?.loader) parts.push(prepass.loader);
@@ -260,7 +260,9 @@ function statusContainer(
 ): PatchedContainerBuilder {
   const container = new PatchedContainerBuilder().setAccentColor(color);
   const request = includeRequest ? `\n${requestLine(job)}` : '';
-  container.addTextDisplayComponents(text(`## ${title(job)}\n-# ${status}${request}`));
+  container.addTextDisplayComponents(
+    text(`## ${title(job)}\n-# ${status}${request}\n-# sparkId: ${job.profile.sparkId}`)
+  );
   const buttons = profileButtons(job);
   if (channelUrl) buttons.unshift(linkButton('Full Analysis', channelUrl));
   container.addActionRowComponents(new ActionRowBuilder<ButtonBuilder>().addComponents(buttons));
