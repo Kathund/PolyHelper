@@ -7,6 +7,7 @@ import {
   type BaseMessageOptions,
   ButtonBuilder,
   ButtonStyle,
+  DiscordAPIError,
   type GuildMember,
   type Message,
   MessageFlags,
@@ -77,12 +78,24 @@ class Ticket extends BaseParsedDatabaseItem<DatabaseTicket> {
   }
 
   async getOwnerDiscord(): Promise<GuildMember> {
-    if (!this.manager.application.discord.isGuildReady()) {
-      await this.manager.application.discord.loadGuild();
-      throw new PolyHelperError("The discord server isn't ready. Please try again later");
+    try {
+      return await this.getGuildMember(this.owner);
+    } catch (error) {
+      if (!(error instanceof DiscordAPIError) || error.code !== 10007) throw error;
+      const thread = await this.getThread();
+      await thread.send({
+        content: 'Ticket owner left, please chase them down.',
+        components: [
+          new ActionRowBuilder<ButtonBuilder>().addComponents(
+            new ButtonBuilder()
+              .setLabel('Close Ticket')
+              .setStyle(ButtonStyle.Danger)
+              .setCustomId(`closeTicket:${this.id}`)
+          )
+        ]
+      });
+      throw new PolyHelperError('Ticket owner left, please chase them down.');
     }
-
-    return await this.manager.application.discord.guild.members.fetch(this.owner);
   }
 
   async getThread(): Promise<TextThreadChannel> {

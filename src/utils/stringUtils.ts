@@ -68,7 +68,7 @@ export function replaceVariables(template: string, variables: Readonly<Record<st
   });
 }
 
-export function getReason(reason: string | null | undefined): string {
+export function getReason(reason: string | null | undefined = undefined): string {
   return reason ?? 'No reason provided';
 }
 

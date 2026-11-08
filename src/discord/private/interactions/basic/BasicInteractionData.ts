@@ -11,6 +11,15 @@ abstract class BasicInteractionData<
   abstract readonly metadata: Metadata;
   constructor(protected readonly discord: DiscordManagerWithClient) {}
 
+  protected getRawId(interaction: CustomIdInteraction): string {
+    if (!(this.metadata instanceof BasicInteractionMetadata)) throw new PolyHelperError('Unsupported interaction data');
+    const split = interaction.customId.split(':');
+    const id = split[0];
+    if (!id) throw new PolyHelperError('Could not get the args of this interaction');
+    if (!this.metadata.ids.includes(id)) throw new PolyHelperError('Could not get the args of this interaction');
+    return id;
+  }
+
   protected getArgs(interaction: CustomIdInteraction): string[] {
     if (!(this.metadata instanceof BasicInteractionMetadata)) throw new PolyHelperError('Unsupported interaction data');
     const split = interaction.customId.split(':');

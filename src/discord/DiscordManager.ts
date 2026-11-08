@@ -80,6 +80,8 @@ class DiscordManager {
       this.onInteraction(interaction).catch((e) => this.handleError(toError(e)))
     );
     this.client.on(Events.GuildAuditLogEntryCreate, (entry) => this.eventHandler.onGuildAuditLogEntryCreate(entry));
+    this.client.on(Events.GuildMemberAdd, (member) => this.eventHandler.onGuildMemberAdd(member));
+    this.client.on(Events.GuildMemberRemove, (member) => this.eventHandler.onGuildMemberRemove(member));
     this.client.login(this.application.config.discord.token).catch((e) => this.handleError(toError(e)));
   }
 

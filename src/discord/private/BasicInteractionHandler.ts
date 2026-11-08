@@ -38,15 +38,15 @@ abstract class BasicInteractionHandler<
   }
 
   async onInteraction(interaction: Interaction) {
+    console.discord(
+      `Interaction ${convertInteractionTypeToHuman(interaction.type)} triggered by @${interaction.user.username} (${interaction.user.id}) | ${this.getIdFromInteraction(interaction)} (${this.getRawIdFromInteraction(interaction)})`
+    );
+
     const element = this.elements.get(this.getIdFromInteraction(interaction));
     if (!element) return;
 
     try {
       await this.handleResponse(interaction, element);
-
-      console.discord(
-        `Interaction ${convertInteractionTypeToHuman(interaction.type)} triggered by @${interaction.user.username} (${interaction.user.id}) | ${this.getIdFromInteraction(interaction)} (${this.getRawIdFromInteraction(interaction)})`
-      );
 
       this.checkInteractionFlags(interaction, element.metadata.flags);
       await this.checkPermission(interaction, element.metadata.permission);

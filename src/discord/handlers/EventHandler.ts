@@ -1,4 +1,13 @@
-import { AuditLogEvent, type Client, type GuildAuditLogsEntry } from 'discord.js';
+import {
+  ActionRowBuilder,
+  AuditLogEvent,
+  ButtonBuilder,
+  ButtonStyle,
+  type Client,
+  type GuildAuditLogsEntry,
+  GuildMember,
+  type PartialGuildMember
+} from 'discord.js';
 import type DiscordManager from '../DiscordManager.ts';
 import type Ticket from '../../database/private/Ticket.ts';
 import type { TicketAction } from '../../types/misc.ts';
@@ -40,6 +49,29 @@ class EventHandler {
   private async onTicketUnarchive(ticket: Ticket, action: TicketAction) {
     if (!ticket.closed) return;
     await ticket.open(action);
+  }
+
+  async onGuildMemberAdd(member: GuildMember | PartialGuildMember) {
+    const tickets = this.discord.application.database.getTickets({ owner: member.user.id, closed: false });
+    for (const ticket of tickets) await ticket.addUser({ user: member.user, executor: member.user, silent: true });
+  }
+
+  async onGuildMemberRemove(member: GuildMember | PartialGuildMember) {
+    const tickets = this.discord.application.database.getTickets({ owner: member.user.id, closed: false });
+    for (const ticket of tickets) {
+      const thread = await ticket.getThread();
+      await thread.send({
+        content: 'Ticket owner left, please chase them down',
+        components: [
+          new ActionRowBuilder<ButtonBuilder>().setComponents(
+            new ButtonBuilder()
+              .setLabel('Close Ticket')
+              .setStyle(ButtonStyle.Danger)
+              .setCustomId(`closeTicket:${ticket.id}`)
+          )
+        ]
+      });
+    }
   }
 }
 
