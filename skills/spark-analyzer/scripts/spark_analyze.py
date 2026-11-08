@@ -31,33 +31,51 @@ Options:
     --callers-depth N   Callers to show per chain (default 4)
     --hook-min PCT      Smallest mixin hook to list in the hook audit (default 1.0)
     --mods              Print the full loaded-mod list (id and version)
+    --mappings TYPE     Deobfuscation mappings: "auto" (default, detected like the web viewer), "none", or a
+                        spark-mappings id such as yarn-1_21_11, mcp-1_12_2, vanilla-1_21_11, bukkit-mojang-1_21_11
     --json              Emit machine-readable JSON instead of the text report
 
 If Python can't verify bytebin's TLS certificate, the download retries with certifi, then curl.
 """
-import sys, os, struct, collections, urllib.request, urllib.error, gzip, json, re, ssl, shutil, subprocess
+import sys, os, struct, collections, urllib.request, urllib.error, gzip, json, re, ssl, shutil, subprocess, functools
 
 BYTEBIN = "https://bytebin.lucko.me/"
+MAPPINGS = "https://spark-mappings.lucko.me/dist/"
 SAMPLER_MEDIA_TYPE = "application/x-spark-sampler"
 USER_AGENT = {'User-Agent': 'spark-analyzer'}
 
 GL_NATIVE = 'gl-native'
 NON_MOD_BUCKETS = (GL_NATIVE, 'jvm', 'unknown')
-ENGINE_PREFIXES = ('org.lwjgl', 'com.mojang.blaze3d', 'java.', 'jdk.', 'sun.', 'it.unimi')
+ENGINE_PREFIXES = ('org.lwjgl', 'com.mojang.blaze3d', 'java.', 'jdk.', 'sun.', 'it.unimi',
+                   # Yarn moves most of com.mojang.blaze3d into these.
+                   'net.minecraft.client.gl.', 'net.minecraft.client.texture.GlTexture',
+                   'net.minecraft.client.render.FrameGraphBuilder', 'net.minecraft.client.render.FramePass',
+                   'net.minecraft.client.render.BufferBuilder', 'net.minecraft.client.render.BuiltBuffer',
+                   'net.minecraft.client.render.Tessellator', 'net.minecraft.client.util.BufferAllocator',
+                   'net.minecraft.client.util.math.MatrixStack', 'net.minecraft.client.util.Window')
 HOOK_RE = re.compile(r'^(?:wrapMethod|wrapOperation|wrapWithCondition|handler|redirect|modify[A-Za-z]*|localvar)'
                      r'\$[a-z0-9]+\$([^$]+)\$([^$]+)')
 FAST_PATH_RE = re.compile(r'defer|skip|cull|cache|batch|reuse|fast|optimi|once|ifchanged|same', re.I)
 CHEAP_GL_CALLS = ('glBindFramebuffer', 'glUseProgram', 'glBindTexture', 'glViewport', 'glColorMask',
                   'glFenceSync', 'glDeleteSync')
-SMALL_PRIMITIVE_RE = re.compile(r'sky|sun|moon|star|disc|blit|quad|fullscreen|clear', re.I)
+SMALL_PRIMITIVE_RE = re.compile(r'sky|sun|moon|star|disc|blit|drawtexture|quad|fullscreen|clear', re.I)
 INTEGRATED_GPU_CPU_RE = re.compile(r'\d{4,5}G\d\b|\d{4,5}[UY]\b|\bApple M\d', re.I)
 OLD_GEN_RE = re.compile(r'old|marksweep|major', re.I)
 LIBRARY_RE = re.compile(r'^(?:[a-z0-9]+_){2,}|^fabric-.+-v\d+$|^(?:java|minecraft|fabricloader|mixinextras)$')
 CLIENT_THREADS = ("Render thread", "Client thread")
-PASS_ANCHORS = ('Minecraft.renderFrame', 'GameRenderer.render', 'GameRenderer.renderLevel', 'LevelRenderer.render',
-                'FrameGraphBuilder.execute', 'GameRenderer.extract', 'Gui.extractRenderState', 'GuiRenderer.render',
-                'GpuSurface.present', 'Minecraft.tick')
+# Mojmap names, each followed by its Yarn counterpart where it differs (or the closest equivalent, for names new in 26.1).
+PASS_ANCHORS = ('Minecraft.renderFrame', 'MinecraftClient.render', 'GameRenderer.render', 'GameRenderer.renderLevel',
+                'GameRenderer.renderWorld', 'LevelRenderer.render', 'WorldRenderer.render', 'FrameGraphBuilder.execute',
+                'FrameGraphBuilder.run', 'GameRenderer.extract', 'Gui.extractRenderState', 'InGameHud.render',
+                'GuiRenderer.render', 'GpuSurface.present', 'Window.swapBuffers', 'Minecraft.tick',
+                'MinecraftClient.tick')
+FRAME_GRAPH_RUN = ('FrameGraphBuilder.execute', 'FrameGraphBuilder.run')
 PASS_NAME_RE = re.compile(r'lambda\$add(\w+?)Pass')
+# Yarn leaves LevelRenderer's lambda$add*Pass unnamed; their intermediary names across 1.21.2-1.21.11 (Yarn's last).
+YARN_PASS_LAMBDAS = {'method_62205': 'Clouds', 'method_62212': 'LateDebug', 'method_72915': 'LateDebug',
+                     'method_75413': 'LateDebug', 'method_62213': 'Particles', 'method_62214': 'Main',
+                     'method_62215': 'Sky', 'method_62216': 'Weather'}
+PLATFORM_PROXY, PLATFORM_APPLICATION = 2, 3       # PlatformMetadata.Type
 
 SAMPLER_METADATA = {'start_time': 2, 'interval_us': 3, 'platform_metadata': 7, 'platform_statistics': 8,
                     'system_statistics': 9, 'end_time': 11, 'sources': 13, 'sampler_mode': 15,
@@ -65,6 +83,7 @@ SAMPLER_METADATA = {'start_time': 2, 'interval_us': 3, 'platform_metadata': 7, '
 SYSTEM_STATISTICS = {'cpu_threads': (1, 1), 'cpu_process_last1m': (1, 2, 1), 'cpu_system_last1m': (1, 3, 1),
                      'cpu_model': (1, 4), 'ram_used': (2, 1, 1), 'ram_total': (2, 1, 2),
                      'swap_used': (2, 2, 1), 'swap_total': (2, 2, 2), 'gc_since_jvm_start': 3,
+                     'os_arch': (5, 1), 'os_name': (5, 2), 'os_version': (5, 3),
                      'java_version': (6, 2), 'java_vm_args': (6, 4), 'uptime_ms': (7,)}
 PLATFORM_HEAP = {'path': (1, 1), 'used': 1, 'committed': 2, 'max': 4}
 PLUGIN_OR_MOD_VERSION = 2
@@ -154,8 +173,8 @@ def _curl_path():
             return system_curl
     return shutil.which('curl')
 
-def fetch(ident):
-    req = urllib.request.Request(BYTEBIN + ident, headers=USER_AGENT)
+def fetch(url):
+    req = urllib.request.Request(url, headers=USER_AGENT)
     try:
         with urllib.request.urlopen(req, timeout=30) as r:
             return r.headers.get_content_type(), r.read()
@@ -175,7 +194,7 @@ def fetch(ident):
     if not curl:
         raise tls_error
     out = subprocess.run([curl, '-sSfL', '--max-time', '60', '-A', USER_AGENT['User-Agent'],
-                          '-w', '\n%{content_type}', BYTEBIN + ident], capture_output=True, check=True).stdout
+                          '-w', '\n%{content_type}', url], capture_output=True, check=True).stdout
     body, _, ctype = out.rpartition(b'\n')
     print("note: Python's TLS store failed; downloaded with curl", file=sys.stderr)
     return ctype.decode('ascii', 'replace').split(';')[0].strip(), body
@@ -187,7 +206,7 @@ def load(src):
     else:
         m = re.search(r'(?:spark\.lucko\.me|bytebin\.lucko\.me)/(\w+)', src)
         ident = m.group(1) if m else src.strip().strip('/')
-        ctype, data = fetch(ident)
+        ctype, data = fetch(BYTEBIN + ident)
         if ctype != SAMPLER_MEDIA_TYPE:
             raise ValueError("%s is %s, not a sampler profile (heap dump / health report?)" % (ident, ctype))
     if data[:2] == b'\x1f\x8b':          # gzip magic, e.g. a locally saved compressed upload
@@ -197,12 +216,123 @@ def load(src):
         raise ValueError("not a spark sampler protobuf, first byte=%#x" % (data[0] if data else 0))
     return data
 
+# ---------- mappings ----------
+# A port of spark-viewer's src/viewer/sampler/mappings. Files follow spark-mappings' protogen/mappings.proto;
+# the .wasm extension only makes GitHub Pages compress them.
+@functools.lru_cache(None)
+def mappings_info():
+    return json.loads(fetch(MAPPINGS + 'mappings.json')[1])
+
+@functools.lru_cache(None)
+def mappings_file(version, name):
+    return parse(fetch('%s%s/%s.wasm' % (MAPPINGS, version, name))[1])
+
+def detect_mappings(meta, auto):
+    name, version = (meta['loader'] or '').lower(), meta['mc_version']
+    if not name or not version or meta['platform_type'] == PLATFORM_PROXY:
+        return None
+    rc = re.search(r'(\d+\.\d+) Release Candidate \d+', version)
+    if name == 'paper':
+        name = 'bukkit'
+    elif meta['platform_type'] == PLATFORM_APPLICATION:
+        name = 'vanilla'
+    return auto.get('%s/%s' % (name, rc.group(1) if rc else version))
+
+def class_mapping(raw):
+    """ClassMapping -> (mapped, obfuscated, [(mapped, obfuscated, description)])."""
+    c = parse(raw)
+    s = lambda f, k: pstr(f, k) or ''
+    return s(c, 1), s(c, 2), [(s(m, 1), s(m, 2), s(m, 3)) for m in (parse(b) for _, b in c.get(3, ()))]
+
+def split_lambda(cls):
+    i = cls.find('$$Lambda')
+    return (cls, '') if i < 0 else (cls[:i], cls[i:])
+
+def pick_method(candidates, desc):
+    if len(candidates) == 1:
+        return candidates[0][0]
+    return next((m[0] for m in candidates if m[2] == desc), None)
+
+def load_mappings(type_id, info):
+    """remap(cls, meth, desc) -> (cls or None, meth or None) for a spark-mappings id such as yarn-1_21_11."""
+    kind, _, version = type_id.rpartition('-')
+    meta = info['types'].get(kind, {}).get('versions', {}).get(version)
+    if meta is None:
+        raise ValueError("unknown mappings %r (see %smappings.json)" % (type_id, MAPPINGS))
+
+    if kind == 'yarn':
+        f = mappings_file(version, 'yarn')
+        classes = smap(f, 1)
+        # The method table also has a few plain keys (`apply`, `calculate`) that would rename unrelated methods.
+        methods = {k: v for k, v in smap(f, 2).items() if any(ch.isdigit() for ch in k)}
+        def remap(cls, meth, desc):
+            base, lam = split_lambda(cls)
+            return (classes[base] + lam if base in classes else None), methods.get(meth)
+    elif kind == 'mcp':
+        methods = smap(mappings_file(version, 'mcp'), 2)
+        def remap(cls, meth, desc):
+            return None, methods.get(meth)
+    elif kind == 'vanilla':
+        classes = pmap(mappings_file(version, 'mojang'), 1)
+        def remap(cls, meth, desc):
+            base, lam = split_lambda(cls)
+            if base not in classes:
+                return None, None
+            mapped, _, methods = class_mapping(classes[base])
+            return mapped + lam, pick_method([m for m in methods if m[1] == meth], desc)
+    else:                                             # bukkit-mojang, bukkit
+        nms = meta.get('nmsVersion')
+        if not nms and not meta.get('mojangClassNamesAtRuntime'):
+            raise ValueError("mappings %r have no NMS version" % type_id)
+        output = pmap(mappings_file(version, 'mojang' if kind == 'bukkit-mojang' else 'mcp'), 1)
+        bukkit = {k: class_mapping(v) for k, v in pmap(mappings_file(version, 'bukkit'), 1).items()}
+        by_obf = {c[1]: c for c in bukkit.values()}
+        prefix = 'net.minecraft.server.%s.' % nms if nms else 'net.minecraft.'
+
+        def bukkit_type(m):
+            c = by_obf.get(m.group(1))
+            if not c:
+                return m.group(0)
+            return 'Lnet/minecraft/server/%s/%s;' % (nms, c[0]) if nms else 'L%s;' % c[0].replace('.', '/')
+
+        def remap(cls, meth, desc):
+            if not cls.startswith(prefix):
+                return None, None
+            name = cls[len(prefix):]
+            if name == 'MinecraftServer':
+                data = bukkit.get('net.minecraft.server.MinecraftServer')
+            else:
+                data = bukkit.get(name if nms else 'net.minecraft.' + name)
+            # Skip methods bukkit already names.
+            if not data or data[1] not in output or any(m[0] == meth for m in data[2]):
+                return None, None
+            candidates = [m for m in class_mapping(output[data[1]])[2] if m[1] == meth]
+            if len(candidates) > 1:
+                # Same obfuscated name, different signature: compare in bukkit's namespace.
+                candidates = [(m[0], m[1], re.sub(r'L([^;]+);', bukkit_type, m[2])) for m in candidates]
+            return None, pick_method(candidates, desc)
+    return functools.lru_cache(None)(remap)
+
+def mappings_for(meta, requested):
+    """(mappings id or None, remap or None). `requested` is 'auto', 'none' or a spark-mappings id."""
+    if requested == 'none':
+        return None, None
+    try:
+        info = mappings_info()
+        type_id = detect_mappings(meta, info['auto']) if requested == 'auto' else requested
+        return type_id, type_id and load_mappings(type_id, info)
+    except (OSError, subprocess.CalledProcessError) as e:
+        print("note: couldn't download mappings, names stay obfuscated: %s" % e, file=sys.stderr)
+        return None, None
+
 # ---------- core ----------
-def analyze(data):
+def analyze(data, mappings='auto'):
     top = parse(data)                                 # SamplerData
     class_src = smap(top, 3)                          # class_sources:  "class" -> mod
     method_src = smap(top, 4)                         # method_sources: "class;method;desc" -> mod
     line_src = smap(top, 5)                           # line_sources:   "class;line" -> mod
+    meta = metadata(top)
+    meta['mappings'], remap = mappings_for(meta, mappings)
 
     def mod_of(cls, meth, desc, line):
         # Same precedence as spark-viewer's SourcesMap. method/line sources are how a mixin merged
@@ -226,7 +356,14 @@ def analyze(data):
         kids = [varints(n, 9) for n in nodes]         # children_refs: indices into `nodes`
         cls = [pstr(n, 3) or '' for n in nodes]       # class_name
         meth = [pstr(n, 4) or '' for n in nodes]      # method_name
-        mods = [mod_of(cls[i], meth[i], pstr(n, 7), pint(n, 6)) for i, n in enumerate(nodes)]   # method_desc, line_number
+        desc = [pstr(n, 7) for n in nodes]            # method_desc
+        mods = [mod_of(cls[i], meth[i], desc[i], pint(n, 6)) for i, n in enumerate(nodes)]   # line_number
+        # Sources are keyed by runtime names, so remap only after resolving them.
+        class_mods = [class_src.get(c) for c in cls]
+        if remap:
+            for i in range(len(nodes)):
+                c, m = remap(cls[i], meth[i], desc[i])
+                cls[i], meth[i] = c or cls[i], m or meth[i]
         selft = [totals[i] - sum(totals[k] for k in kids[i]) for i in range(len(nodes))]
         by_mod = collections.Counter(); by_meth = collections.Counter(); tot = 0.0
         for i in range(len(nodes)):
@@ -241,7 +378,7 @@ def analyze(data):
             'wall': sum(doubles(tn, 4)) or tot,
             # Kept so callers can walk the tree (inclusive time of a subtree, "who calls X").
             'totals': totals, 'kids': kids, 'cls': cls, 'meth': meth, 'mods': mods, 'selft': selft,
-            'class_mods': [class_src.get(c) for c in cls],
+            'class_mods': class_mods,
             'parent': {k: i for i, ks in enumerate(kids) for k in ks},
             'hooks': [hook_key(m) for m in meth],
         }
@@ -249,7 +386,7 @@ def analyze(data):
     return {
         'threads': threads,
         'windows': len(varints(top, 6)),              # time_windows
-        'meta': metadata(top),
+        'meta': meta,
         'mods': modset(top),
         'mod_versions': mod_versions(top),
     }
@@ -270,6 +407,7 @@ def metadata(top):
     mspt = pmsg(pmsg(s, 5), 1)                        # PlatformStatistics.mspt.last1m
     out = {
         'loader': pstr(p, 2), 'loader_version': pstr(p, 3), 'mc_version': pstr(p, 4),
+        'platform_type': pint(p, 1) or 0,
         'mode': 'allocation' if pint(m, 15) == 1 else 'execution',  # sampler_mode
         'engine': 'async' if pint(m, SAMPLER_METADATA['sampler_engine']) == 1 else 'java',
         'interval_ms': (pint(m, SAMPLER_METADATA['interval_us']) or 0) / 1000.0,
@@ -300,13 +438,17 @@ def system_stats(m):
         g = parse(raw)
         if pint(g, 1):
             gc[name] = {'count': pint(g, 1), 'avg_ms': pdbl(g, 2) or 0.0}
+    os_name = ppath(s, f['os_name'], pstr)
+    # On Windows, spark's swap fields hold committed memory and the commit limit, not the page file.
+    memory_pool = 'commit' if (os_name or '').startswith('Windows') else 'swap'
     out = {
+        'os_name': os_name, 'os_version': ppath(s, f['os_version'], pstr), 'os_arch': ppath(s, f['os_arch'], pstr),
         'cpu_model': (ppath(s, f['cpu_model'], pstr) or '').strip() or None,
         'cpu_threads': ppath(s, f['cpu_threads'], pint),
         'cpu_process_last1m': ppath(s, f['cpu_process_last1m'], pdbl),
         'cpu_system_last1m': ppath(s, f['cpu_system_last1m'], pdbl),
         'ram_used': ppath(s, f['ram_used'], pint), 'ram_total': ppath(s, f['ram_total'], pint),
-        'swap_used': ppath(s, f['swap_used'], pint), 'swap_total': ppath(s, f['swap_total'], pint),
+        memory_pool + '_used': ppath(s, f['swap_used'], pint), memory_pool + '_total': ppath(s, f['swap_total'], pint),
         'heap_used': pint(heap, PLATFORM_HEAP['used']), 'heap_committed': pint(heap, PLATFORM_HEAP['committed']),
         'heap_max': pint(heap, PLATFORM_HEAP['max']),
         'java_version': ppath(s, f['java_version'], pstr), 'xmx': xmx.group(1) if xmx else None,
@@ -392,8 +534,9 @@ def pass_name(t, root):
     while queue and seen < 4000:
         n = queue.popleft(); seen += 1
         m = PASS_NAME_RE.search(t['meth'][n])
-        if m:
-            return m.group(1)
+        name = m.group(1) if m else YARN_PASS_LAMBDAS.get(t['meth'][n])
+        if name:
+            return name
         queue.extend(t['kids'][n])
     return re.sub(r'\$\$Lambda.*$', '', t['cls'][root].split('.')[-1]) or short(t, root)
 
@@ -431,7 +574,7 @@ def render_passes(t):
         if tops:
             anchors.append({'frame': name, 'pct': pct(t, sum(t['totals'][i] for i in tops))})
     passes = collections.OrderedDict()
-    for fg in top_instances(t, lambda i: short(t, i) == 'FrameGraphBuilder.execute'):
+    for fg in top_instances(t, lambda i: short(t, i) in FRAME_GRAPH_RUN):
         for k in t['kids'][fg]:
             if pct(t, t['totals'][k]) < 0.5:
                 continue
@@ -525,6 +668,9 @@ def gb(n):
 
 def print_system(s):
     bits = []
+    os_info = ' '.join(filter(None, (s['os_name'], s['os_version'], s['os_arch'])))
+    if os_info:
+        bits.append('os ' + os_info)
     if s['cpu_model']:
         cpu = re.sub(r'\(R\)|\(TM\)|CPU|@.*$', '', s['cpu_model'])
         bits.append('%s (%s thr, proc %.0f%%, sys %.0f%%)' % (' '.join(cpu.split()), s['cpu_threads'] or '?',
@@ -533,8 +679,9 @@ def print_system(s):
     if s['ram_total']:
         bits.append('ram %s/%s GB (%.0f%%)' % (gb(s['ram_used']), gb(s['ram_total']),
                                               100.0 * (s['ram_used'] or 0) / s['ram_total']))
-    if s['swap_total']:
-        bits.append('swap %s/%s GB' % (gb(s['swap_used']), gb(s['swap_total'])))
+    memory_pool = 'commit' if 'commit_total' in s else 'swap'
+    if s[memory_pool + '_total']:
+        bits.append('%s %s/%s GB' % (memory_pool, gb(s[memory_pool + '_used']), gb(s[memory_pool + '_total'])))
     if s['heap_max']:
         bits.append('heap %s/%s/%s GB' % (gb(s['heap_used']), gb(s['heap_committed']), gb(s['heap_max'])))
     if s['java_version']:
@@ -558,6 +705,7 @@ def print_report(label, res, thread, top_n, show_all, hook_min):
     if meta.get('duration_ms'): bits.append("dur=%.0fs" % (meta['duration_ms'] / 1000))
     bits.append("windows=%d" % res['windows'])
     bits.append("engine=%s/%gms" % (meta['engine'], meta['interval_ms']))
+    bits.append("mappings=%s" % (meta['mappings'] or 'none'))
     if meta.get('tps') is not None: bits.append("tps1m=%.1f" % meta['tps'])
     if meta.get('mspt_mean') is not None:
         bits.append("mspt1m=%.2f/%.0fmax" % (meta['mspt_mean'], meta.get('mspt_max') or 0))
@@ -734,7 +882,6 @@ def pick_thread(res, thread):
 def to_json(lab, r, thread, hook_min, tree, callers_pattern, callers_depth):
     th = r['threads'].get(thread) or {}
     out = {'label': lab, 'meta': r['meta'], 'windows': r['windows'], 'mods': sorted(r['mods']),
-           'mod_versions': r['mod_versions'],
            'thread': thread, 'self_total_ms': th.get('self_total'), 'wall_ms': th.get('wall'),
            'by_mod': dict((th.get('by_mod') or collections.Counter()).most_common())}
     if th:
@@ -752,7 +899,7 @@ def main():
     args = sys.argv[1:]
     thread = None; top_n = 25; show_all = False; as_json = False; show_mods = False
     tree = None; tree_min = 0.15; tree_depth = 20
-    callers_pattern = None; callers_depth = 4; hook_min = 1.0
+    callers_pattern = None; callers_depth = 4; hook_min = 1.0; mappings = 'auto'
     srcs = []
     i = 0
     try:
@@ -766,6 +913,7 @@ def main():
             elif a == '--callers': callers_pattern = args[i+1]; i += 2
             elif a == '--callers-depth': callers_depth = int(args[i+1]); i += 2
             elif a == '--hook-min': hook_min = float(args[i+1]); i += 2
+            elif a == '--mappings': mappings = args[i+1]; i += 2
             elif a == '--mods': show_mods = True; i += 1
             elif a == '--all': show_all = True; i += 1
             elif a == '--json': as_json = True; i += 1
@@ -784,7 +932,10 @@ def main():
         lab = os.path.splitext(os.path.basename(s))[0] if os.path.exists(s) \
             else re.search(r'(\w+)$', s.rstrip('/')).group(1)
         labels.append(lab)
-        results.append(analyze(load(s)))
+        try:
+            results.append(analyze(load(s), mappings))
+        except ValueError as e:
+            print('ERROR: %s' % e); sys.exit(1)
 
     if as_json:
         print(json.dumps([to_json(lab, r, pick_thread(r, thread), hook_min, tree, callers_pattern, callers_depth)
