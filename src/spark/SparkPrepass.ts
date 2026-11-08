@@ -259,7 +259,7 @@ export async function runPrepass(job: SparkJob, config: Config['sparkAnalysis'])
   const problem = summaries.at(-1);
   if (!problem) throw new PolyHelperError('spark_analyze.py returned no profile data');
   const baseline = summaries.length > 1 ? (summaries[0] ?? null) : null;
-  const loadedMods = new Set([...problem.mods, ...Object.keys(problem.mod_versions)]);
+  const loadedMods = new Set([...problem.mods, ...Object.keys(problem.mod_versions ?? {})]);
 
   const suspects = pickSuspects(problem, baseline, config.maxJars);
   const results = await Promise.allSettled(
