@@ -10,14 +10,16 @@
       "support": "DISCORD_ROLE_ID",
       "noCounting": "DISCORD_ROLE_ID",
       "noGiveaway": "DISCORD_ROLE_ID",
-      "devAccess": "DISCORD_ROLE_ID"
+      "devAccess": "DISCORD_ROLE_ID",
+      "testerPing": "DISCORD_ROLE_ID"
     },
     "channels": {
       "errorLog": null,
       "support": "DISCORD_CHANNEL_ID",
       "ticketLogs": null,
       "botLogs": null,
-      "sparkAnalysis": null
+      "sparkAnalysis": null,
+      "testersChat": "DISCORD_CHANNEL_ID"
     },
     "embeds": {
       "colors": {

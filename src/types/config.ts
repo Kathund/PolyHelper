@@ -60,7 +60,8 @@ export const ConfigDiscordRoles = zod
     support: ConfigDiscordRoleId,
     noCounting: ConfigDiscordRoleId,
     noGiveaway: ConfigDiscordRoleId,
-    devAccess: ConfigDiscordRoleId
+    devAccess: ConfigDiscordRoleId,
+    testerPing: ConfigDiscordRoleId
   })
   .meta({ description: 'Configuration options the discord roles' });
 export const ConfigDiscordChannels = zod
@@ -69,7 +70,8 @@ export const ConfigDiscordChannels = zod
     support: ConfigDiscordChannelId,
     ticketLogs: ConfigDiscordChannelIdGenerate,
     botLogs: ConfigDiscordChannelIdGenerate,
-    sparkAnalysis: ConfigDiscordChannelIdGenerate
+    sparkAnalysis: ConfigDiscordChannelIdGenerate,
+    testersChat: ConfigDiscordChannelId
   })
   .meta({ description: 'Configuration options the discord channels' });
 export const ConfigDiscord = zod

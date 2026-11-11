@@ -22,9 +22,10 @@
             "support": { "type": "string", "description": "Discord role id" },
             "noCounting": { "type": "string", "description": "Discord role id" },
             "noGiveaway": { "type": "string", "description": "Discord role id" },
-            "devAccess": { "type": "string", "description": "Discord role id" }
+            "devAccess": { "type": "string", "description": "Discord role id" },
+            "testerPing": { "type": "string", "description": "Discord role id" }
           },
-          "required": ["polyfrostTeam", "moderator", "support", "noCounting", "noGiveaway", "devAccess"],
+          "required": ["polyfrostTeam", "moderator", "support", "noCounting", "noGiveaway", "devAccess", "testerPing"],
           "additionalProperties": false,
           "description": "Configuration options the discord roles"
         },
@@ -47,9 +48,10 @@
             "sparkAnalysis": {
               "description": "Discord channel id. If null, an auto-generated channel will be used",
               "type": ["string", "null"]
-            }
+            },
+            "testersChat": { "type": "string", "description": "Discord channel id" }
           },
-          "required": ["errorLog", "support", "ticketLogs", "botLogs", "sparkAnalysis"],
+          "required": ["errorLog", "support", "ticketLogs", "botLogs", "sparkAnalysis", "testersChat"],
           "additionalProperties": false,
           "description": "Configuration options the discord channels"
         },

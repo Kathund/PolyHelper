@@ -64,7 +64,7 @@ class OpenTicketButton extends DiscordButton {
       name: panel.parseTicketName({ user: interaction.user, shouldReplaceVariables: true }),
       autoArchiveDuration: ThreadAutoArchiveDuration.OneWeek,
       type: ChannelType.PrivateThread,
-      invitable: true,
+      invitable: false,
       reason: auditLogReason
     });
     await thread.members.add(interaction.user);
