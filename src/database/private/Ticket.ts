@@ -258,7 +258,7 @@ class Ticket extends BaseParsedDatabaseItem<DatabaseTicket> {
     if (closeRequest) await this.manager.deleteCloseRequest(closeRequest.id);
     await thread.setArchived(true, `Ticket closed by ${getUserDisplayName(executor)}`);
     this.manager.updateTicket({
-      ...(await this.deleteTicketLogMessage()).toJSON(),
+      ...(await updated.deleteTicketLogMessage()).toJSON(),
       closed: 1,
       closedBy: executor.id,
       closedReason: getReason(reason)
