@@ -403,6 +403,10 @@ class Ticket extends BaseParsedDatabaseItem<DatabaseTicket> {
     return updated;
   }
 
+  static getTicketLogMessageContent({ user, thread }: { user: User; thread: TextThreadChannel }) {
+    return `Ticket opened by <@${user.id}> (\`${user.id}\`) - ${thread.url}`;
+  }
+
   async getTicketLogMessage(): Promise<Message | null> {
     if (this.ticketLogsMesageId === null) return null;
     const logs = await this.manager.application.discord.getChannel('ticketLogs');
@@ -415,6 +419,27 @@ class Ticket extends BaseParsedDatabaseItem<DatabaseTicket> {
     const ticketLogMesasge = await this.getTicketLogMessage();
     if (ticketLogMesasge) await ticketLogMesasge.delete();
     return this.manager.updateTicket({ ...this.toJSON(), ticketLogsMesageId: null });
+  }
+
+  async transfer({ reason, executor, user, silent }: TicketAction & { user: User; silent?: boolean }) {
+    const updated = this.manager.updateTicket({ ...this.toJSON(), owner: user.id });
+    const thread = await this.getThread();
+    if (silent !== true) {
+      await thread.send({
+        embeds: [
+          new TicketActionEmbed({
+            title: 'Transfered',
+            description: `Ticket transfered from <@${this.owner}> to <@${user.id}> by ${getMention(executor)}`,
+            reason,
+            executor
+          })
+        ]
+      });
+    }
+    await this.addUser({ reason, executor, user, silent: true });
+    const logMessage = await this.getTicketLogMessage();
+    if (logMessage) await logMessage.edit({ content: Ticket.getTicketLogMessageContent({ user, thread }) });
+    return await updated.rename({ executor, silent: true });
   }
 
   override toEmbed(): EmbedHelper {

@@ -2,6 +2,7 @@ import BasicInteractionMetadata from '../../../private/interactions/basic/BasicI
 import DiscordButton from '../../../private/interactions/DiscordButton.ts';
 import EmbedHelper from '../../../private/EmbedHelper.ts';
 import PolyHelperError from '../../../../private/error.ts';
+import Ticket from '../../../../database/private/Ticket.ts';
 import { type ButtonInteraction, ChannelType, MessageFlags, ThreadAutoArchiveDuration } from 'discord.js';
 import { InteractionFlag, InteractionResponse, type InteractionWithGuild } from '../../../../types/discord.ts';
 import { getUserDisplayName } from '../../../../utils/discordUtils.ts';
@@ -92,7 +93,7 @@ class OpenTicketButton extends DiscordButton {
 
     const ticketLogs = await this.discord.getChannel('ticketLogs');
     const logMessage = await ticketLogs.send({
-      content: `Ticket opened by <@${interaction.user.id}> (\`${interaction.user.id}\`) - ${thread.url}`,
+      content: Ticket.getTicketLogMessageContent({ user: interaction.user, thread }),
       allowedMentions: { parse: [] }
     });
 
