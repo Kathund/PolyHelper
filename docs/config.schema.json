@@ -20,12 +20,22 @@
             "polyfrostTeam": { "type": "string", "description": "Discord role id" },
             "moderator": { "type": "string", "description": "Discord role id" },
             "support": { "type": "string", "description": "Discord role id" },
+            "superContributor": { "type": "string", "description": "Discord role id" },
             "noCounting": { "type": "string", "description": "Discord role id" },
             "noGiveaway": { "type": "string", "description": "Discord role id" },
             "devAccess": { "type": "string", "description": "Discord role id" },
             "testerPing": { "type": "string", "description": "Discord role id" }
           },
-          "required": ["polyfrostTeam", "moderator", "support", "noCounting", "noGiveaway", "devAccess", "testerPing"],
+          "required": [
+            "polyfrostTeam",
+            "moderator",
+            "support",
+            "superContributor",
+            "noCounting",
+            "noGiveaway",
+            "devAccess",
+            "testerPing"
+          ],
           "additionalProperties": false,
           "description": "Configuration options the discord roles"
         },

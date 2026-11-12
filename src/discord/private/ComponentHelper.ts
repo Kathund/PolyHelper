@@ -14,6 +14,7 @@ import {
   RadioGroupBuilder,
   RadioGroupOptionBuilder,
   RoleSelectMenuBuilder,
+  SectionBuilder,
   SeparatorBuilder,
   SeparatorSpacingSize,
   StringSelectMenuBuilder,
@@ -27,9 +28,10 @@ import { ConfigDiscordEmbedsColors } from '../../types/config.ts';
 import { hexToRgb } from '../../utils/miscUtils.ts';
 import { readFileSync } from 'node:fs';
 import type Panel from '../../database/private/Panel.ts';
+import type Project from '../../database/private/Project.ts';
 import type SupportTeam from '../../database/private/SupportTeam.ts';
 import type Ticket from '../../database/private/Ticket.ts';
-import type { BaseDatabaseItem, DatabasePanel, DatabaseSupportTeam } from '../../types/database.ts';
+import type { BaseDatabaseItem, DatabasePanel, DatabaseProject, DatabaseSupportTeam } from '../../types/database.ts';
 import type { MinimalRepository } from '../../types/github.ts';
 import type { TicketSearch } from '../../types/misc.ts';
 
@@ -378,7 +380,7 @@ export function createBooleanFilter(
 export function getSearchContainer(
   search: TicketSearch,
   panels: DatabasePanel[] | Panel[],
-  repos: MinimalRepository[],
+  project: Project | undefined,
   searchId: string
 ): PatchedContainerBuilder {
   return new PatchedContainerBuilder()
@@ -418,20 +420,15 @@ export function getSearchContainer(
     )
     .addSeparatorComponents(new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small).setDivider(true))
     .addTextDisplayComponents(new TextDisplayBuilder().setContent('Tagged Project'))
-    .addActionRowComponents(
-      new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(
-        GithubReposStringSelectMenu(repos, search.taggedProject, 24)
-          .setCustomId(`ticketSearchFilterSelect:${searchId}:taggedProject`)
-          .setPlaceholder('Tagged Project')
-          .setMinValues(1)
-          .setMaxValues(1)
-          .addOptions(
-            new StringSelectMenuOptionBuilder()
-              .setLabel('Any Project')
-              .setValue('__any__')
-              .setDefault(search.taggedProject === undefined)
-          )
-      )
+    .addSectionComponents(
+      new SectionBuilder()
+        .addTextDisplayComponents(new TextDisplayBuilder().setContent(`\`\`\`\n${project?.name ?? 'Any'}\n\`\`\``))
+        .setButtonAccessory(
+          new ButtonBuilder()
+            .setStyle(ButtonStyle.Secondary)
+            .setLabel('Change')
+            .setCustomId(`ticketSearchFilterTaggedProject:${searchId}`)
+        )
     )
     .addSeparatorComponents(new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small).setDivider(true))
     .addTextDisplayComponents(new TextDisplayBuilder().setContent('Pin State'))
@@ -485,7 +482,8 @@ export function getSearchContainer(
 
 export function TicketSearchResults(
   tickets: Ticket[],
-  search: TicketSearch
+  search: TicketSearch,
+  project: Project | undefined = undefined
 ): NonNullable<BaseMessageOptions['components']> {
   const searchId = crypto.randomUUID();
   Application.cache.set<TicketSearch>(`ticket:search:${searchId}`, search);
@@ -495,7 +493,7 @@ export function TicketSearchResults(
     search.closed !== undefined && `**State:** ${search.closed ? 'Closed' : 'Open'}`,
     search.inactivitySilenced !== undefined &&
       `**Inactivity State:** ${search.inactivitySilenced ? 'Silenced' : 'Unsilenced'}`,
-    search.taggedProject && `**Tagged Project:** \`${search.taggedProject}\``,
+    search.taggedProjectId && project && `**Tagged Project:** \`${project.name}\``,
     search.panelId && `**Panel Id:** \`${search.panelId}\``,
     search.owner && `**Owner:** <@${search.owner}> (${search.owner})`,
     search.closedBy && `**Closed By:** <@${search.closedBy}> (${search.closedBy})`
@@ -536,4 +534,62 @@ export function TicketSearchResults(
         .setDisabled(tickets.length === 0)
     )
   ];
+}
+
+export function ProjectModal(project?: Project | DatabaseProject): ModalBuilder {
+  return new ModalBuilder().addLabelComponents(
+    new LabelBuilder().setLabel('name').setTextInputComponent(
+      new TextInputBuilder()
+        .setCustomId('name')
+        .setStyle(TextInputStyle.Short)
+        .setRequired(true)
+        .setValue(project?.name ?? '')
+    ),
+    new LabelBuilder().setLabel('source code url').setTextInputComponent(
+      new TextInputBuilder()
+        .setCustomId('sourceUrl')
+        .setStyle(TextInputStyle.Short)
+        .setRequired(false)
+        .setValue(project?.sourceUrl ?? '')
+    ),
+    new LabelBuilder().setLabel('modrinth id').setTextInputComponent(
+      new TextInputBuilder()
+        .setCustomId('modrinthId')
+        .setStyle(TextInputStyle.Short)
+        .setRequired(false)
+        .setValue(project?.modrinthId ?? '')
+    ),
+    new LabelBuilder().setLabel('notes').setTextInputComponent(
+      new TextInputBuilder()
+        .setCustomId('notes')
+        .setStyle(TextInputStyle.Paragraph)
+        .setRequired(false)
+        .setValue(project?.notes ?? '')
+    )
+  );
+}
+
+export function CreateIssueModal(description?: string): ModalBuilder {
+  return new ModalBuilder()
+    .setTitle('Create Issue')
+    .setCustomId('createIssue')
+    .addLabelComponents(
+      new LabelBuilder()
+        .setLabel('project')
+        .setTextInputComponent(
+          new TextInputBuilder().setCustomId('project').setStyle(TextInputStyle.Short).setRequired(true)
+        ),
+      new LabelBuilder()
+        .setLabel('title')
+        .setTextInputComponent(
+          new TextInputBuilder().setCustomId('title').setStyle(TextInputStyle.Short).setRequired(true)
+        ),
+      new LabelBuilder().setLabel('description').setTextInputComponent(
+        new TextInputBuilder()
+          .setCustomId('description')
+          .setStyle(TextInputStyle.Paragraph)
+          .setRequired(false)
+          .setValue(description ?? '')
+      )
+    );
 }

@@ -29,7 +29,11 @@ class TicketSearchApplyButton extends DiscordButton {
 
     const message = await channel.messages.fetch(source.messageId);
     await message.edit({
-      components: TicketSearchResults(tickets, filters),
+      components: TicketSearchResults(
+        tickets,
+        filters,
+        filters.taggedProjectId ? this.discord.application.database.getProject(filters.taggedProjectId) : undefined
+      ),
       flags: MessageFlags.IsComponentsV2,
       allowedMentions: { parse: [] }
     });

@@ -12,7 +12,9 @@ class TagProjectCommand extends DiscordCommand {
   override readonly metadata: DiscordCommandMetadata = new DiscordCommandMetadata()
     .setName('tag-project')
     .setDescription('Tag a ticket to a project')
-    .addStringOption((option) => option.setName('github-repo').setDescription('the repo name').setAutocomplete(true))
+    .addStringOption((option) =>
+      option.setName('project').setDescription('the project you want to tag this ticket with').setAutocomplete(true)
+    )
     .addStringOption((option) => option.setName('reason').setDescription('The reason for tagging'))
     .setFlags(InteractionFlag.RequiresGuild)
     .setResponse(InteractionResponse.Ephemeral)
@@ -23,7 +25,7 @@ class TagProjectCommand extends DiscordCommand {
     await this.getTicket(interaction).tagProject({
       executor: interaction.user,
       reason: this.getReason(interaction),
-      taggedProject: interaction.options.getString('github-repo') ?? null
+      taggedProjectId: interaction.options.getString('project') ?? null
     });
   }
 }

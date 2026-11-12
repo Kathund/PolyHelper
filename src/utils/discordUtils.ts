@@ -80,6 +80,14 @@ export async function isSupportMember(member: GuildMember | APIInteractionGuildM
   return await hasRole(member, member.client.discordManager.application.config.discord.roles.support);
 }
 
+export async function isSuperContributorMember(
+  member: GuildMember | APIInteractionGuildMember | null
+): Promise<boolean> {
+  if (!isGuildMember(member)) return false;
+  if (await isSupportMember(member)) return true;
+  return await hasRole(member, member.client.discordManager.application.config.discord.roles.superContributor);
+}
+
 export function isInteractionInsideOfGuild<Interaction extends BaseInteraction>(
   interaction: Interaction
 ): interaction is InteractionWithGuild<Interaction> {

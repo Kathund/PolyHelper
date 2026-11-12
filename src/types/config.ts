@@ -58,6 +58,7 @@ export const ConfigDiscordRoles = zod
     polyfrostTeam: ConfigDiscordRoleId,
     moderator: ConfigDiscordRoleId,
     support: ConfigDiscordRoleId,
+    superContributor: ConfigDiscordRoleId,
     noCounting: ConfigDiscordRoleId,
     noGiveaway: ConfigDiscordRoleId,
     devAccess: ConfigDiscordRoleId,

@@ -22,6 +22,7 @@ import { toError } from '../../utils/miscUtils.ts';
 import type CloseRequest from './CloseRequest.ts';
 import type DatabaseManager from '../DatabaseManager.ts';
 import type Panel from './Panel.ts';
+import type Project from './Project.ts';
 import type { AutocompleteOption } from '../../types/discord.ts';
 import type { DatabaseCloseRequest, DatabaseTicket } from '../../types/database.ts';
 import type { TicketAction } from '../../types/misc.ts';
@@ -37,7 +38,7 @@ class Ticket extends BaseParsedDatabaseItem<DatabaseTicket> {
   readonly inactivityNoticeId: DatabaseTicket['inactivityNoticeId'];
   readonly #inactivitySilenced: DatabaseTicket['inactivitySilenced'];
   readonly name: DatabaseTicket['name'];
-  readonly taggedProject: DatabaseTicket['taggedProject'];
+  readonly taggedProjectId: DatabaseTicket['taggedProjectId'];
   readonly closedBy: DatabaseTicket['closedBy'];
   readonly closedReason: DatabaseTicket['closedReason'];
   readonly #closed: DatabaseTicket['closed'];
@@ -53,7 +54,7 @@ class Ticket extends BaseParsedDatabaseItem<DatabaseTicket> {
     this.inactivityNoticeId = data.inactivityNoticeId;
     this.#inactivitySilenced = data.inactivitySilenced;
     this.name = data.name;
-    this.taggedProject = data.taggedProject;
+    this.taggedProjectId = data.taggedProjectId;
     this.closedBy = data.closedBy;
     this.closedReason = data.closedReason;
     this.#closed = data.closed;
@@ -77,6 +78,11 @@ class Ticket extends BaseParsedDatabaseItem<DatabaseTicket> {
     return panel;
   }
 
+  get taggedProject(): Project | null {
+    if (!this.taggedProjectId) return null;
+    return this.manager.getProject(this.taggedProjectId) ?? null;
+  }
+
   async getOwnerDiscord(): Promise<GuildMember> {
     try {
       return await this.getGuildMember(this.owner);
@@ -90,7 +96,7 @@ class Ticket extends BaseParsedDatabaseItem<DatabaseTicket> {
             new ButtonBuilder()
               .setLabel('Close Ticket')
               .setStyle(ButtonStyle.Danger)
-              .setCustomId(`closeTicket:${this.id}`)
+              .setCustomId(`closeTicket:${this.id}:User_Left`)
           )
         ]
       });
@@ -385,13 +391,14 @@ class Ticket extends BaseParsedDatabaseItem<DatabaseTicket> {
   async tagProject({
     reason,
     executor,
-    taggedProject
-  }: TicketAction & { taggedProject: DatabaseTicket['taggedProject'] }) {
+    taggedProjectId
+  }: TicketAction & { taggedProjectId: DatabaseTicket['taggedProjectId'] }) {
+    const updated = this.manager.updateTicket({ ...this.toJSON(), taggedProjectId });
     const thread = await this.getThread();
     const embed = new TicketActionEmbed({ title: 'Tagged', reason, executor });
-    embed.setFields({ name: 'Project', value: taggedProject ?? 'None' }, ...embed.fields);
+    embed.setFields({ name: 'Project', value: updated.taggedProject?.name ?? 'None' }, ...embed.fields);
     await thread.send({ embeds: [embed] });
-    this.manager.updateTicket({ ...this.toJSON(), taggedProject });
+    return updated;
   }
 
   override toEmbed(): EmbedHelper {
@@ -403,6 +410,7 @@ class Ticket extends BaseParsedDatabaseItem<DatabaseTicket> {
         { name: 'Thread', value: `<#${this.threadId}>` },
         { name: 'Opend', value: Math.floor(this.openingTimestamp / 1000), format: 'Timestamp' },
         { name: 'Owner', value: this.owner, format: 'Discord User' },
+        { name: 'Tagged Project', value: this.taggedProject?.name ?? 'None', format: 'Block' },
         { name: 'Is Closed', value: this.closed, format: 'Boolean', inline: true },
         { name: 'Is Pinned', value: this.pinned, format: 'Boolean', inline: true },
         { name: 'Is Silenced', value: this.inactivitySilenced, format: 'Boolean', inline: true }
@@ -463,7 +471,7 @@ class Ticket extends BaseParsedDatabaseItem<DatabaseTicket> {
       inactivityNoticeId: this.inactivityNoticeId,
       inactivitySilenced: this.#inactivitySilenced,
       name: this.name,
-      taggedProject: this.taggedProject,
+      taggedProjectId: this.taggedProjectId,
       closedBy: this.closedBy,
       closedReason: this.closedReason,
       closed: this.#closed

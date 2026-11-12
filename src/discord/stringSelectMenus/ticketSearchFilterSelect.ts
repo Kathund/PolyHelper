@@ -3,7 +3,6 @@ import BasicInteractionMetadata from '../private/interactions/basic/BasicInterac
 import DiscordStringSelectMenu from '../private/interactions/DiscordStringSelectMenu.ts';
 import PolyHelperError from '../../private/error.ts';
 import { InteractionResponse } from '../../types/discord.ts';
-import { getOrganizationRepositories } from '../../utils/githubUtils.ts';
 import { getSearchContainer } from '../private/ComponentHelper.ts';
 import type { StringSelectMenuInteraction } from 'discord.js';
 import type { TicketSearch } from '../../types/misc.ts';
@@ -26,9 +25,6 @@ class TicketSearchFilterSelect extends DiscordStringSelectMenu {
       case 'panelId':
         search.panelId = value === '__any__' ? undefined : value;
         break;
-      case 'taggedProject':
-        search.taggedProject = value === '__any__' ? undefined : value;
-        break;
       case 'pinned':
       case 'closed':
       case 'inactivitySilenced':
@@ -47,7 +43,7 @@ class TicketSearchFilterSelect extends DiscordStringSelectMenu {
         getSearchContainer(
           search,
           this.discord.application.database.getPanels(),
-          await getOrganizationRepositories(),
+          search.taggedProjectId ? this.discord.application.database.getProject(search.taggedProjectId) : undefined,
           searchId
         )
       ]

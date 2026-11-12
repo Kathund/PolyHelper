@@ -12,24 +12,10 @@ const maxBranches = 5;
 
 const maxGateFiles = 8;
 
-function authHeaders(token: string | null): Record<string, string> {
-  return token ? { Authorization: `Bearer ${token}` } : {};
-}
-
-async function cached<T>(key: string, load: () => Promise<T>): Promise<T> {
-  const hit = Application.cache.get<{ value: T }>(key);
-  if (hit) return hit.value;
-  const value = await load();
-  Application.cache.set(key, { value });
-  return value;
-}
-
-function getRepoInfo(repo: string, token: string | null): Promise<RepoInfo | null> {
-  return cached(`source:repo:${repo.toLowerCase()}`, async () => {
+function getRepoInfo(repo: string): Promise<RepoInfo | null> {
+  return Application.cachedRequest(`source:repo:${repo.toLowerCase()}`, async () => {
     try {
-      const response = await githubRequest<RepoInfo>(`https://api.github.com/repos/${repo}`, {
-        headers: authHeaders(token)
-      });
+      const response = await githubRequest<RepoInfo>(`https://api.github.com/repos/${repo}`);
       return { full_name: response.data.full_name, default_branch: response.data.default_branch };
     } catch (error) {
       if (isAxiosError(error) && error.response?.status === 404) return null;
@@ -49,10 +35,9 @@ async function scoreBranch(
   repo: string,
   branch: string,
   modVersion: string | null,
-  mcVersion: string | null,
-  token: string | null
+  mcVersion: string | null
 ): Promise<number> {
-  const texts = await Promise.all(versionFiles.map((file) => getFileText(repo, file, branch, token).catch(() => null)));
+  const texts = await Promise.all(versionFiles.map((file) => getFileText(repo, file, branch).catch(() => null)));
   return Math.max(0, ...texts.map((text) => (text ? scoreText(text, modVersion, mcVersion) : 0)));
 }
 
@@ -75,25 +60,20 @@ export interface SourceGateLine {
   url: string;
 }
 
-export function findModSource(modId: string, token: string | null): Promise<ModSource> {
-  return cached(`source:mod:${modId.toLowerCase()}`, async () => {
+export function findModSource(modId: string): Promise<ModSource> {
+  return Application.cachedRequest(`source:mod:${modId.toLowerCase()}`, async () => {
     const project = await findModrinthProject(modId);
     let repo = getGithubRepo(project?.source_url) ?? null;
-    if (!repo) repo = (await getRepoInfo(`Polyfrost/${modId}`, token))?.full_name ?? null;
+    if (!repo) repo = (await getRepoInfo(`Polyfrost/${modId}`))?.full_name ?? null;
     return { repo, project, polyfrost: repo?.split('/')[0]?.toLowerCase() === 'polyfrost' };
   });
 }
 
-export async function getFileText(
-  repo: string,
-  path: string,
-  ref: string | null,
-  token: string | null
-): Promise<string | null> {
+export async function getFileText(repo: string, path: string, ref: string | null): Promise<string | null> {
   try {
     const response = await githubRequest<string>(getContentsURL(repo, path), {
       params: ref ? { ref } : undefined,
-      headers: { ...authHeaders(token), Accept: 'application/vnd.github.raw+json' },
+      headers: { Accept: 'application/vnd.github.raw+json' },
       responseType: 'text'
     });
     if (String(response.headers['content-type'] ?? '').includes('application/json')) return null;
@@ -104,39 +84,26 @@ export async function getFileText(
   }
 }
 
-export async function listDirectory(
-  repo: string,
-  path: string,
-  ref: string | null,
-  token: string | null
-): Promise<ContentEntry[] | null> {
+export async function listDirectory(repo: string, path: string, ref: string | null): Promise<ContentEntry[] | null> {
   const response = await githubRequest<ContentEntry[] | ContentEntry>(getContentsURL(repo, path), {
-    params: ref ? { ref } : undefined,
-    headers: authHeaders(token)
+    params: ref ? { ref } : undefined
   });
   return Array.isArray(response.data) ? response.data : null;
 }
 
-export async function searchCode(repo: string, query: string, token: string | null): Promise<string[]> {
-  if (!token) throw new PolyHelperError('Code search needs a GitHub token, and none is configured');
+export async function searchCode(repo: string, query: string): Promise<string[]> {
+  if (!process.env.GITHUB_TOKEN) throw new PolyHelperError('Code search needs a GitHub token, and none is configured');
   const response = await githubRequest<CodeSearchResponse>('https://api.github.com/search/code', {
-    params: { q: `${query} repo:${repo}`, per_page: 20 },
-    headers: authHeaders(token)
+    params: { q: `${query} repo:${repo}`, per_page: 20 }
   });
   return response.data.items.map((item) => item.path);
 }
 
-export function resolveRef(
-  repo: string,
-  modVersion: string | null,
-  mcVersion: string | null,
-  token: string | null
-): Promise<string | null> {
-  return cached(`source:ref:${repo}:${modVersion}:${mcVersion}`, async () => {
+export function resolveRef(repo: string, modVersion: string | null, mcVersion: string | null): Promise<string | null> {
+  return Application.cachedRequest(`source:ref:${repo}:${modVersion}:${mcVersion}`, async () => {
     if (modVersion) {
       const tags = await githubRequest<{ ref: string }[]>(
-        `https://api.github.com/repos/${repo}/git/matching-refs/tags/`,
-        { headers: authHeaders(token) }
+        `https://api.github.com/repos/${repo}/git/matching-refs/tags/`
       ).catch(() => null);
       const names = (tags?.data ?? []).map((tag) => tag.ref.replace(/^refs\/tags\//, ''));
       const matching = names.filter((name) => name.includes(modVersion));
@@ -144,11 +111,10 @@ export function resolveRef(
       if (best) return best;
     }
 
-    const info = await getRepoInfo(repo, token).catch(() => null);
+    const info = await getRepoInfo(repo).catch(() => null);
     const fallback = info?.default_branch ?? null;
     const branches = await githubRequest<{ name: string }[]>(`https://api.github.com/repos/${repo}/branches`, {
-      params: { per_page: 30 },
-      headers: authHeaders(token)
+      params: { per_page: 30 }
     }).catch(() => null);
     const names = (branches?.data ?? []).map((branch) => branch.name);
     const named = names.find((name) => mcVersion && name.includes(mcVersion));
@@ -158,7 +124,7 @@ export function resolveRef(
     const scored = await Promise.all(
       candidates
         .slice(0, maxBranches)
-        .map(async (name) => ({ name, score: await scoreBranch(repo, name, modVersion, mcVersion, token) }))
+        .map(async (name) => ({ name, score: await scoreBranch(repo, name, modVersion, mcVersion) }))
     );
     const versionMatch = scored.find((entry) => entry.score >= 2);
     return versionMatch?.name ?? fallback;
@@ -173,14 +139,13 @@ export async function scanSourceGates(
   repo: string,
   ref: string | null,
   loadedMods: Set<string>,
-  selfId: string,
-  token: string | null
+  selfId: string
 ): Promise<SourceGateLine[]> {
-  if (!token) return [];
-  const paths = (await searchCode(repo, 'isModLoaded', token)).filter((path) => /\.(java|kt)$/.test(path));
+  if (!process.env.GITHUB_TOKEN) return [];
+  const paths = (await searchCode(repo, 'isModLoaded')).filter((path) => /\.(java|kt)$/.test(path));
   const gates: SourceGateLine[] = [];
   for (const path of paths.slice(0, maxGateFiles)) {
-    const text = (await getFileText(repo, path, ref, token)) ?? (await getFileText(repo, path, null, token));
+    const text = (await getFileText(repo, path, ref)) ?? (await getFileText(repo, path, null));
     if (!text) continue;
     text.split('\n').forEach((line, index) => {
       const literals = [...line.matchAll(/"([a-z0-9_-]{3,})"/g)].map((match) => match[1] as string);

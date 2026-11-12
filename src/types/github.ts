@@ -1,3 +1,5 @@
+import type { User } from 'discord.js';
+
 export interface SimpleUser {
   login: string;
   id: number;
@@ -104,4 +106,71 @@ export interface ContentEntry {
 export interface CodeSearchResponse {
   total_count: number;
   items: { path: string }[];
+}
+
+export interface CreateIssueOptions {
+  owner: string;
+  repository: string;
+  title: string;
+  description?: string;
+  author: User;
+}
+
+export interface GithubLabel {
+  id: number;
+  node_id: string;
+  url: string;
+  name: string;
+  description: string | null;
+  color: string;
+  default: boolean;
+}
+
+export interface GithubMilestone {
+  url: string;
+  html_url: string;
+  labels_url: string;
+  id: number;
+  node_id: string;
+  number: number;
+  state: 'open' | 'closed';
+  title: string;
+  description: string | null;
+  creator: SimpleUser;
+  open_issues: number;
+  closed_issues: number;
+  created_at: string;
+  updated_at: string;
+  closed_at: string | null;
+  due_on: string | null;
+}
+
+export interface GithubIssue {
+  id: number;
+  node_id: string;
+  url: string;
+  repository_url: string;
+  labels_url: string;
+  comments_url: string;
+  events_url: string;
+  html_url: string;
+  number: number;
+  state: 'open' | 'closed';
+  title: string;
+  body: string | null;
+  user: SimpleUser;
+  pinned_comment: unknown | null;
+  labels: GithubLabel[];
+  assignees: SimpleUser[];
+  milestone: GithubMilestone | null;
+  locked: boolean;
+  active_lock_reason: string | null;
+  comments: number;
+  pull_request?: { url: string; html_url: string; diff_url: string; patch_url: string };
+  closed_at: string | null;
+  created_at: string;
+  updated_at: string;
+  closed_by: SimpleUser | null;
+  author_association: string;
+  state_reason: string | null;
 }

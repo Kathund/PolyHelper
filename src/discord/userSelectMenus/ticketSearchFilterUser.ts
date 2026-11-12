@@ -3,7 +3,6 @@ import BasicInteractionMetadata from '../private/interactions/basic/BasicInterac
 import DiscordUserSelectMenu from '../private/interactions/DiscordUserSelectMenu.ts';
 import PolyHelperError from '../../private/error.ts';
 import { InteractionResponse } from '../../types/discord.ts';
-import { getOrganizationRepositories } from '../../utils/githubUtils.ts';
 import { getSearchContainer } from '../private/ComponentHelper.ts';
 import type { TicketSearch } from '../../types/misc.ts';
 import type { UserSelectMenuInteraction } from 'discord.js';
@@ -31,7 +30,7 @@ class TicketSearchFilterUser extends DiscordUserSelectMenu {
         getSearchContainer(
           search,
           this.discord.application.database.getPanels(),
-          await getOrganizationRepositories(),
+          search.taggedProjectId ? this.discord.application.database.getProject(search.taggedProjectId) : undefined,
           searchId
         )
       ]

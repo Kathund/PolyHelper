@@ -209,8 +209,7 @@ export async function scanMod(
   const version = problem.mod_versions[modId] ?? null;
   const mcVersion = problem.meta.mc_version;
   const loader = problem.meta.loader?.toLowerCase() ?? null;
-  const token = config.githubToken;
-  const source = await findModSource(modId, token);
+  const source = await findModSource(modId);
   const scanned: ScannedMod = {
     modId,
     version,
@@ -242,9 +241,9 @@ export async function scanMod(
     }
   }
 
-  if (scanned.repo) scanned.ref = await resolveRef(scanned.repo, version, mcVersion, token).catch(() => null);
+  if (scanned.repo) scanned.ref = await resolveRef(scanned.repo, version, mcVersion).catch(() => null);
   if (!scanned.jar && scanned.repo) {
-    scanned.sourceGates = await scanSourceGates(scanned.repo, scanned.ref, loadedMods, modId, token).catch(() => []);
+    scanned.sourceGates = await scanSourceGates(scanned.repo, scanned.ref, loadedMods, modId).catch(() => []);
   }
   return scanned;
 }

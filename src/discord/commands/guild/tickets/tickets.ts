@@ -36,10 +36,7 @@ class TicketsCommand extends DiscordCommand {
         )
         .addUserOption((option) => option.setName('owner').setDescription('The person who opened the ticket'))
         .addStringOption((option) =>
-          option
-            .setName('tagged-github-repo')
-            .setDescription('Search tickets by tagged github repo')
-            .setAutocomplete(true)
+          option.setName('project').setDescription('Search tickets by tagged project').setAutocomplete(true)
         )
         .addStringOption((option) =>
           option
@@ -83,13 +80,17 @@ class TicketsCommand extends DiscordCommand {
       pinned: pinState === null ? undefined : pinState === 'pinned',
       closed: state === null ? undefined : state === 'closed',
       inactivitySilenced: inactivityState === null ? undefined : inactivityState === 'silenced',
-      taggedProject: interaction.options.getString('tagged-github-repo') ?? undefined,
+      taggedProjectId: interaction.options.getString('project') ?? undefined,
       closedBy: interaction.options.getUser('closed-by')?.id
     };
 
     const tickets = this.discord.application.database.getTickets({ ...search, limit: 25 });
     await interaction.followUp({
-      components: TicketSearchResults(tickets, search),
+      components: TicketSearchResults(
+        tickets,
+        search,
+        search.taggedProjectId ? this.discord.application.database.getProject(search.taggedProjectId) : undefined
+      ),
       flags: MessageFlags.IsComponentsV2,
       allowedMentions: { parse: [] }
     });

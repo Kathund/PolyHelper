@@ -42,6 +42,7 @@ export enum InteractionPermission {
   PolyfrostTeam,
   Moderator,
   Support,
+  SuperContributor,
   Anyone
 }
 

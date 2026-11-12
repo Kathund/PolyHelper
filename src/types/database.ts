@@ -60,7 +60,7 @@ export const DatabaseTicket = BaseDatabaseItem.extend({
   inactivityNoticeId: zod.string().nullable(),
   inactivitySilenced: DatabaseBoolean,
   name: zod.string(),
-  taggedProject: zod.string().nullable(),
+  taggedProjectId: zod.string().nullable(),
   closedBy: zod.string().nullable(),
   closedReason: zod.string().nullable(),
   closed: DatabaseBoolean
@@ -75,7 +75,7 @@ export interface TicketSearchFilters extends DatabaseSearchFilters<'OpeningTimes
   inactivitySilenced?: boolean;
   closed?: boolean;
   autoClose?: boolean;
-  taggedProject?: Exclude<DatabaseTicket['taggedProject'], null>;
+  taggedProjectId?: Exclude<DatabaseTicket['taggedProjectId'], null>;
   closedBy?: Exclude<DatabaseTicket['closedBy'], null>;
 }
 
@@ -117,5 +117,22 @@ export const DatabaseTicketBlacklistUser = BaseDatabaseItem.extend({
 export type DatabaseTicketBlacklistUser = zod.infer<typeof DatabaseTicketBlacklistUser>;
 export type RequiredDatabaseTicketBlacklistUserFields = 'user' | 'reason' | 'addedBy';
 
+export const DatabaseProject = BaseDatabaseItem.extend({
+  name: zod.string(),
+  source: zod.string(),
+  sourceUrl: zod.string().nullable(),
+  modrinthId: zod.string().nullable(),
+  notes: zod.string().nullable()
+});
+export type DatabaseProject = zod.infer<typeof DatabaseProject>;
+export interface ProjectSearchFilters extends DatabaseSearchFilters {
+  source?: DatabaseProject['source'];
+}
+
 export type DatabaseItem =
-  DatabaseCloseRequest | DatabasePanel | DatabaseSupportTeam | DatabaseTicket | DatabaseTicketBlacklistUser;
+  | DatabaseCloseRequest
+  | DatabasePanel
+  | DatabaseSupportTeam
+  | DatabaseTicket
+  | DatabaseTicketBlacklistUser
+  | DatabaseProject;

@@ -4,7 +4,7 @@ import type { DatabaseMigrationFile, DatabaseSearchFilters, MetadataEntry } from
 
 abstract class BasicDatabaseManager {
   protected abstract readonly databaseMigrationsPath: string;
-  readonly db: Database.Database;
+  protected readonly db: Database.Database;
   constructor(private readonly databasePath: string) {
     this.db = new Database(this.databasePath);
   }

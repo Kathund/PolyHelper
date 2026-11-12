@@ -26,15 +26,16 @@ This document is generated from the Zod config schema in [`src/types/config.ts`]
 
 ### roles
 
-| Key             | Type     | Description     |
-| --------------- | -------- | --------------- |
-| `polyfrostTeam` | `string` | Discord role id |
-| `moderator`     | `string` | Discord role id |
-| `support`       | `string` | Discord role id |
-| `noCounting`    | `string` | Discord role id |
-| `noGiveaway`    | `string` | Discord role id |
-| `devAccess`     | `string` | Discord role id |
-| `testerPing`    | `string` | Discord role id |
+| Key                | Type     | Description     |
+| ------------------ | -------- | --------------- |
+| `polyfrostTeam`    | `string` | Discord role id |
+| `moderator`        | `string` | Discord role id |
+| `support`          | `string` | Discord role id |
+| `superContributor` | `string` | Discord role id |
+| `noCounting`       | `string` | Discord role id |
+| `noGiveaway`       | `string` | Discord role id |
+| `devAccess`        | `string` | Discord role id |
+| `testerPing`       | `string` | Discord role id |
 
 ### channels
 
@@ -101,7 +102,7 @@ This document is generated from the Zod config schema in [`src/types/config.ts`]
 ---
 
 This document is [auto generated](/scripts/docs/Configuration.ts) and was last updated on
-`Wed, 11 Nov 2026 03:54:04 GMT` (`1794369244051`)
+`Thu, 12 Nov 2026 01:30:38 GMT` (`1794447038209`)
 
 To update this document please run `pnpm docgen` or contact a maintainer and ask them to update it.
 

@@ -16,7 +16,7 @@ class TicketStateUpdateButton extends DiscordButton {
     .setFetchGuildMember(false);
 
   override async execute(interaction: InteractionWithGuild<ButtonInteraction>) {
-    const [id] = this.getArgs(interaction);
+    const [id, reason] = this.getArgs(interaction);
     if (id === undefined) throw new PolyHelperError('Could not find this ticket?');
     const ticket = this.discord.application.database.getTicket(id);
     if (!ticket) throw new PolyHelperError('Could not find this ticket?');
@@ -25,15 +25,13 @@ class TicketStateUpdateButton extends DiscordButton {
         .setCustomId(interaction.customId)
         .setTitle(titleCaseFromCamel(this.getRawId(interaction)))
         .addLabelComponents(
-          new LabelBuilder()
-            .setLabel('Reason')
-            .setTextInputComponent(
-              new TextInputBuilder()
-                .setCustomId('reason')
-                .setStyle(TextInputStyle.Short)
-                .setRequired(true)
-                .setValue(getReason())
-            )
+          new LabelBuilder().setLabel('Reason').setTextInputComponent(
+            new TextInputBuilder()
+              .setCustomId('reason')
+              .setStyle(TextInputStyle.Short)
+              .setRequired(true)
+              .setValue(getReason(reason ? reason.replaceAll('_', ' ') : undefined))
+          )
         )
     );
   }

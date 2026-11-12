@@ -28,6 +28,14 @@ class Application {
     this.spark = new SparkManager(this);
   }
 
+  static async cachedRequest<T>(key: string, load: () => Promise<T>): Promise<T> {
+    const hit = this.cache.get<{ value: T }>(key);
+    if (hit) return hit.value;
+    const value = await load();
+    this.cache.set(key, { value });
+    return value;
+  }
+
   static async request<T>(url: string, config: AxiosRequestConfig = {}): Promise<AxiosResponse<T>> {
     const headers = new AxiosHeaders(config.headers as AxiosHeaders | undefined);
     if (!headers.has('User-Agent')) headers.set('User-Agent', this.getUserAgent());
@@ -88,7 +96,7 @@ class Application {
   }
 
   static getUserAgent() {
-    return `${this.package.name}/git:${this.runtimeInformation.commit} (github:Polyfrost/PolyHelper)`;
+    return `${this.package.name}/git:${this.runtimeInformation.commit} (github:Kathund/PolyHelper)`;
   }
 }
 

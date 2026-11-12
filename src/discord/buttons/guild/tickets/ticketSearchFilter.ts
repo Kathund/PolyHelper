@@ -4,7 +4,6 @@ import DiscordButton from '../../../private/interactions/DiscordButton.ts';
 import PolyHelperError from '../../../../private/error.ts';
 import { type ButtonInteraction, MessageFlags } from 'discord.js';
 import { InteractionFlag, InteractionResponse, type InteractionWithGuild } from '../../../../types/discord.ts';
-import { getOrganizationRepositories } from '../../../../utils/githubUtils.ts';
 import { getSearchContainer } from '../../../private/ComponentHelper.ts';
 import type { TicketSearch } from '../../../../types/misc.ts';
 
@@ -17,7 +16,7 @@ class TicketSearchFilterButton extends DiscordButton {
   override async execute(interaction: InteractionWithGuild<ButtonInteraction>) {
     const [id] = this.getArgs(interaction);
     if (id === undefined) throw new PolyHelperError('Could not find the ticket search ID');
-    const filters = Application.cache.get(`ticket:search:${id}`);
+    const filters = Application.cache.get<TicketSearch>(`ticket:search:${id}`);
     if (!filters) throw new PolyHelperError('These ticket search filters have expired. Run the search again.');
     const searchId = crypto.randomUUID();
     Application.cache.set<TicketSearch>(`ticket:search:${searchId}`, filters);
@@ -30,7 +29,7 @@ class TicketSearchFilterButton extends DiscordButton {
         getSearchContainer(
           filters,
           this.discord.application.database.getPanels(),
-          await getOrganizationRepositories(),
+          filters.taggedProjectId ? this.discord.application.database.getProject(filters.taggedProjectId) : undefined,
           searchId
         )
       ],

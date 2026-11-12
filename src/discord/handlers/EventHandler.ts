@@ -67,7 +67,7 @@ class EventHandler {
             new ButtonBuilder()
               .setLabel('Close Ticket')
               .setStyle(ButtonStyle.Danger)
-              .setCustomId(`closeTicket:${ticket.id}`)
+              .setCustomId(`closeTicket:${ticket.id}:User_Left`)
           )
         ]
       });

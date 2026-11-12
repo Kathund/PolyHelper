@@ -1,8 +1,10 @@
 import BasicDatabaseManager from './BasicDatabaseManager.ts';
 import CloseRequest from './private/CloseRequest.ts';
 import DebugTicketsCommand from '../discord/commands/guild/tickets/ticketsDebug.ts';
+import Fuse from 'fuse.js';
 import Panel from './private/Panel.ts';
 import PolyHelperError from '../private/error.ts';
+import Project from './private/Project.ts';
 import SupportTeam from './private/SupportTeam.ts';
 import Ticket from './private/Ticket.ts';
 import TicketBlacklistUser from './private/TicketBlacklistUser.ts';
@@ -12,10 +14,12 @@ import type {
   CloseRequestSearchFilters,
   DatabaseCloseRequest,
   DatabasePanel,
+  DatabaseProject,
   DatabaseSupportTeam,
   DatabaseTicket,
   DatabaseTicketBlacklistUser,
   PanelSearchFilters,
+  ProjectSearchFilters,
   RequiredDatabaseTicketBlacklistUserFields,
   RequiredDatabaseTicketFields,
   SupportTeamSearchFilters,
@@ -144,13 +148,13 @@ class DatabaseManager extends BasicDatabaseManager {
           inactivitySilenced: DatabaseTicket['inactivitySilenced'] | null;
           autoClose: DatabaseTicket['closed'] | null;
           closed: DatabaseTicket['closed'] | null;
-          taggedProject: DatabaseTicket['taggedProject'] | null;
+          taggedProjectId: DatabaseTicket['taggedProjectId'] | null;
           closedBy: DatabaseTicket['closedBy'] | null;
           limit: number;
         },
         DatabaseTicket
       >(
-        `SELECT * FROM tickets WHERE (@panelId IS NULL OR panelId = @panelId) AND (@owner IS NULL OR owner = @owner) AND (@pinned IS NULL OR (pinMessageId IS NOT NULL) = @pinned) AND (@inactivitySilenced IS NULL OR inactivitySilenced = @inactivitySilenced) AND (@autoClose IS NULL OR EXISTS (SELECT 1 FROM closeRequests WHERE closeRequests.ticketId = tickets.id AND closeRequests.autoClose IS NOT NULL) = @autoClose) AND (@closed IS NULL OR closed = @closed) AND (@taggedProject IS NULL OR taggedProject = @taggedProject) AND (@closedBy IS NULL OR closedBy = @closedBy)${order} LIMIT @limit`
+        `SELECT * FROM tickets WHERE (@panelId IS NULL OR panelId = @panelId) AND (@owner IS NULL OR owner = @owner) AND (@pinned IS NULL OR (pinMessageId IS NOT NULL) = @pinned) AND (@inactivitySilenced IS NULL OR inactivitySilenced = @inactivitySilenced) AND (@autoClose IS NULL OR EXISTS (SELECT 1 FROM closeRequests WHERE closeRequests.ticketId = tickets.id AND closeRequests.autoClose IS NOT NULL) = @autoClose) AND (@closed IS NULL OR closed = @closed) AND (@taggedProjectId IS NULL OR taggedProjectId = @taggedProjectId) AND (@closedBy IS NULL OR closedBy = @closedBy)${order} LIMIT @limit`
       )
       .all({
         panelId: filters.panelId ?? null,
@@ -159,7 +163,7 @@ class DatabaseManager extends BasicDatabaseManager {
         inactivitySilenced: filters.inactivitySilenced === undefined ? null : filters.inactivitySilenced ? 1 : 0,
         autoClose: filters.autoClose === undefined ? null : filters.autoClose ? 1 : 0,
         closed: filters.closed === undefined ? null : filters.closed ? 1 : 0,
-        taggedProject: filters.taggedProject ?? null,
+        taggedProjectId: filters.taggedProjectId ?? null,
         closedBy: filters.closedBy ?? null,
         limit: filters.limit ?? -1
       })
@@ -191,7 +195,7 @@ class DatabaseManager extends BasicDatabaseManager {
     const lastUpdated: BaseDatabaseItem['lastUpdated'] = Date.now();
     const update = this.db
       .prepare<DatabaseTicket>(
-        'UPDATE tickets SET lastUpdated = @lastUpdated, panelId = @panelId, threadId = @threadId, owner = @owner, pinMessageId = @pinMessageId, startingMessageId = @startingMessageId, openingTimestamp = @openingTimestamp, lastMessageTimestamp = @lastMessageTimestamp, inactivityNoticeId = @inactivityNoticeId, inactivitySilenced = @inactivitySilenced, name = @name, taggedProject = @taggedProject, closedBy = @closedBy, closedReason = @closedReason, closed = @closed WHERE id = @id'
+        'UPDATE tickets SET lastUpdated = @lastUpdated, panelId = @panelId, threadId = @threadId, owner = @owner, pinMessageId = @pinMessageId, startingMessageId = @startingMessageId, openingTimestamp = @openingTimestamp, lastMessageTimestamp = @lastMessageTimestamp, inactivityNoticeId = @inactivityNoticeId, inactivitySilenced = @inactivitySilenced, name = @name, taggedProjectId = @taggedProjectId, closedBy = @closedBy, closedReason = @closedReason, closed = @closed WHERE id = @id'
       )
       .run({ ...data, lastUpdated });
     if (update.changes === 0) throw new PolyHelperError('Could not find this ticket?');
@@ -377,6 +381,77 @@ class DatabaseManager extends BasicDatabaseManager {
       message = await (await this.application.discord.getChannel('botLogs')).send(updated.toMessageData());
     }
     return this.updateTicketBlacklistUser({ ...updated.toJSON(), logMessageId: message.id });
+  }
+
+  getProject(id: BaseDatabaseItem['id']): Project | undefined {
+    const data = this.db
+      .prepare<[BaseDatabaseItem['id']], DatabaseProject>('SELECT * FROM projects WHERE id = ?')
+      .get(id);
+    if (!data) return data;
+    return new Project(data, this);
+  }
+
+  getProjectByName(name: DatabaseProject['name']): Project | undefined {
+    const data = this.db
+      .prepare<[DatabaseProject['name']], DatabaseProject>('SELECT * FROM projects WHERE name = ?')
+      .get(name);
+    if (!data) return data;
+    return new Project(data, this);
+  }
+
+  getProjectByModrinthId(modrinthId: Exclude<DatabaseProject['modrinthId'], null>): Project | undefined {
+    const data = this.db
+      .prepare<[Exclude<DatabaseProject['modrinthId'], null>], DatabaseProject>(
+        'SELECT * FROM projects WHERE modrinthId = ?'
+      )
+      .get(modrinthId);
+    if (!data) return data;
+    return new Project(data, this);
+  }
+
+  getProjects(filters: ProjectSearchFilters = {}): Project[] {
+    const order = this.getOrder(filters, { LastUpdated: 'lastUpdated' });
+    return this.db
+      .prepare<{ source: DatabaseProject['source'] | null; limit: number }, DatabaseProject>(
+        `SELECT * FROM projects WHERE (@source IS NULL OR source = @source)${order} LIMIT @limit`
+      )
+      .all({ source: filters.source ?? null, limit: filters.limit ?? -1 })
+      .map((data) => new Project(data, this));
+  }
+
+  searchProjectNames(input: string): Project[] {
+    const projects = this.db.prepare<[], DatabaseProject>('SELECT * FROM projects').all();
+    const exactMatch = projects.find((project) => project.name.toLowerCase() === input.toLowerCase());
+    if (exactMatch) return [new Project(exactMatch, this)];
+    return new Fuse(projects, { keys: ['name'], isCaseSensitive: false })
+      .search(input)
+      .map(({ item }) => new Project(item, this));
+  }
+
+  insertProject(data: Omit<DatabaseProject, keyof BaseDatabaseItem>): Project {
+    const id: BaseDatabaseItem['id'] = crypto.randomUUID();
+    const lastUpdated: BaseDatabaseItem['lastUpdated'] = Date.now();
+    this.db
+      .prepare<DatabaseProject>(
+        'INSERT INTO projects (id, lastUpdated, name, source, sourceUrl, modrinthId, notes) VALUES (@id, @lastUpdated, @name, @source, @sourceUrl, @modrinthId, @notes)'
+      )
+      .run({ ...data, id, lastUpdated });
+    return new Project({ ...data, id, lastUpdated }, this);
+  }
+
+  updateProject(data: Omit<DatabaseProject, 'lastUpdated'>): Project {
+    const lastUpdated: BaseDatabaseItem['lastUpdated'] = Date.now();
+    const update = this.db
+      .prepare<DatabaseProject>(
+        'UPDATE projects SET lastUpdated = @lastUpdated, name = @name, source = @source, sourceUrl = @sourceUrl, modrinthId = @modrinthId, notes = @notes WHERE id = @id'
+      )
+      .run({ ...data, lastUpdated });
+    if (update.changes === 0) throw new PolyHelperError('Could not find this project?');
+    return new Project({ ...data, lastUpdated }, this);
+  }
+
+  deleteProject(id: BaseDatabaseItem['id']) {
+    this.db.prepare<BaseDatabaseItem['id']>('DELETE FROM projects WHERE id = ?').run(id);
   }
 }
 

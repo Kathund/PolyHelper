@@ -10,6 +10,11 @@ class ConfigManager extends BasicConfigManager<Config> {
     3: { 'other.backupConfigs': { key: 'other.configBackups.enabled', change: ConfigChangeType.Move } },
     4: { 'discord.channels.sparkFixes': { change: ConfigChangeType.Delete } }
   };
+
+  protected override onConfigValidated(config: Config): Config {
+    process.env.GITHUB_TOKEN = config.sparkAnalysis.githubToken ?? undefined;
+    return config;
+  }
 }
 
 export default ConfigManager;

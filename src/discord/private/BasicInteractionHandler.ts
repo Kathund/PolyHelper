@@ -10,6 +10,7 @@ import {
   isInteractionInsideOfGuild,
   isModeratorMember,
   isPolyfrostTeamMember,
+  isSuperContributorMember,
   isSupportMember
 } from '../../utils/discordUtils.ts';
 import { readdir } from 'node:fs/promises';
@@ -90,13 +91,15 @@ abstract class BasicInteractionHandler<
       isAdminMemberCheck,
       isPolyfrostTeamMemberCheck,
       isModeratorMemberCheck,
-      isSupportMemberCheck
+      isSupportMemberCheck,
+      isSuperContributorMemberCheck
     ] = await Promise.all([
       permission === InteractionPermission.Owner ? isApplicationOwner(interaction.user) : false,
       permission === InteractionPermission.Admin ? isAdminMember(interaction.member) : false,
       permission === InteractionPermission.PolyfrostTeam ? isPolyfrostTeamMember(interaction.member) : false,
       permission === InteractionPermission.Moderator ? isModeratorMember(interaction.member) : false,
-      permission === InteractionPermission.Support ? isSupportMember(interaction.member) : false
+      permission === InteractionPermission.Support ? isSupportMember(interaction.member) : false,
+      permission === InteractionPermission.SuperContributor ? isSuperContributorMember(interaction.member) : false
     ]);
 
     const checks: Array<[boolean, string]> = [
@@ -119,6 +122,10 @@ abstract class BasicInteractionHandler<
       [
         permission === InteractionPermission.Support && !isSupportMemberCheck,
         "You don't have permission to use this command. You are required to be apart of the Support Team."
+      ],
+      [
+        permission === InteractionPermission.SuperContributor && !isSuperContributorMemberCheck,
+        "You don't have permission to use this command. You are required to a Super Contributor or higher."
       ]
     ];
 

@@ -170,10 +170,9 @@ function lookupModTool(context: SparkToolContext): ClientTool {
       'Look up a mod by the mod ID spark reports: its Modrinth page, source repository, issue tracker, whether Polyfrost owns it, and the git ref matching the version in the profile.',
     input: zod.object({ mod: zod.string().min(1).describe('Mod ID, e.g. "sodium"') }),
     run: async ({ mod }) => {
-      const token = context.config.githubToken;
-      const source = await findModSource(mod, token);
+      const source = await findModSource(mod);
       const version = context.prepass.problem.mod_versions[mod] ?? null;
-      const ref = source.repo ? await resolveRef(source.repo, version, context.prepass.mcVersion, token) : null;
+      const ref = source.repo ? await resolveRef(source.repo, version, context.prepass.mcVersion) : null;
       return JSON.stringify({
         title: source.project?.title ?? null,
         modrinthURL: source.project ? `https://modrinth.com/mod/${source.project.slug}` : null,
@@ -194,7 +193,7 @@ function searchCodeTool(context: SparkToolContext): ClientTool {
       "Find file paths in a GitHub repository that contain the search terms. Only the default branch is indexed, so read the file at the profile's ref afterwards.",
     input: zod.object({ repo: repoInput, query: zod.string().min(1).describe('Search terms, such as a class name') }),
     run: async ({ repo, query }) => {
-      const paths = await searchCode(repo, query, context.config.githubToken);
+      const paths = await searchCode(repo, query);
       return paths.length > 0 ? paths.join('\n') : 'No matches on the default branch.';
     }
   });
@@ -210,7 +209,7 @@ function listDirectoryTool(context: SparkToolContext): ClientTool {
       ref: refInput
     }),
     run: async ({ repo, path, ref }) => {
-      const entries = await listDirectory(repo, path, ref ?? defaultRef(context, repo), context.config.githubToken);
+      const entries = await listDirectory(repo, path, ref ?? defaultRef(context, repo));
       if (!entries) return `${path} is a file. Use read_source or github_read_file.`;
       return entries.map((entry) => `${entry.type === 'dir' ? 'dir ' : 'file'} ${entry.path}`).join('\n');
     }
@@ -230,7 +229,7 @@ function readFileTool(context: SparkToolContext): ClientTool {
     }),
     run: async ({ repo, path, ref, startLine, endLine }) => {
       const resolved = ref ?? defaultRef(context, repo);
-      const text = await getFileText(repo, path, resolved, context.config.githubToken);
+      const text = await getFileText(repo, path, resolved);
       if (text === null) throw new PolyHelperError(`${path} was not found at ${resolved ?? 'the default branch'}`);
       const lines = text.split('\n');
       const end = Math.min(endLine, startLine + maxReadLines - 1, lines.length);
@@ -256,7 +255,7 @@ function readSourceTool(context: SparkToolContext): ClientTool {
     }),
     run: async ({ repo, path, question, ref }) => {
       const resolved = ref ?? defaultRef(context, repo);
-      const text = await getFileText(repo, path, resolved, context.config.githubToken);
+      const text = await getFileText(repo, path, resolved);
       if (text === null) throw new PolyHelperError(`${path} was not found at ${resolved ?? 'the default branch'}`);
       const numbered = text
         .split('\n')

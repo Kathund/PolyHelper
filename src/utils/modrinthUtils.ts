@@ -5,20 +5,12 @@ import { isAxiosError } from 'axios';
 
 const modrinthBaseURL = 'https://api.modrinth.com/v2';
 
-async function cached<T>(key: string, load: () => Promise<T>): Promise<T> {
-  const hit = Application.cache.get<{ value: T }>(key);
-  if (hit) return hit.value;
-  const value = await load();
-  Application.cache.set(key, { value });
-  return value;
-}
-
 function versionCore(version: string): string {
   return version.toLowerCase().replace(/^v/, '').split('+')[0] ?? version;
 }
 
 export function getModrinthProject(idOrSlug: string): Promise<ModrinthProject | null> {
-  return cached(`modrinth:project:${idOrSlug.toLowerCase()}`, async () => {
+  return Application.cachedRequest(`modrinth:project:${idOrSlug.toLowerCase()}`, async () => {
     try {
       const response = await Application.request(`${modrinthBaseURL}/project/${encodeURIComponent(idOrSlug)}`);
       return await ModrinthProject.parseAsync(response.data);
@@ -30,7 +22,7 @@ export function getModrinthProject(idOrSlug: string): Promise<ModrinthProject | 
 }
 
 export function searchModrinthProject(query: string): Promise<ModrinthProject | null> {
-  return cached(`modrinth:search:${query.toLowerCase()}`, async () => {
+  return Application.cachedRequest(`modrinth:search:${query.toLowerCase()}`, async () => {
     const response = await Application.request(`${modrinthBaseURL}/search`, {
       params: { query, facets: JSON.stringify([['project_type:mod']]), limit: 1 }
     });
@@ -48,7 +40,7 @@ export function getModrinthVersions(
   gameVersion: string | null,
   loader: string | null
 ): Promise<ModrinthVersion[]> {
-  return cached(`modrinth:versions:${projectId}:${gameVersion}:${loader}`, async () => {
+  return Application.cachedRequest(`modrinth:versions:${projectId}:${gameVersion}:${loader}`, async () => {
     const params: Record<string, string> = {};
     if (gameVersion) params.game_versions = JSON.stringify([gameVersion]);
     if (loader) params.loaders = JSON.stringify([loader]);

@@ -1,7 +1,9 @@
 import PolyHelperError from '../private/error.ts';
 import chalk from 'chalk';
+import zod from 'zod';
 import { DiscordjsError, type HexColorString, type RGBTuple } from 'discord.js';
 import { ErrorEmbed } from '../discord/private/EmbedHelper.ts';
+import { parse } from 'smol-toml';
 import type BasicInteractionMetadata from '../discord/private/interactions/basic/BasicInteractionMetadata.ts';
 import type DiscordCommandMetadata from '../discord/private/interactions/commands/DiscordCommandMetadata.ts';
 import type { DevData, ValidErrors } from '../types/application.ts';
@@ -85,4 +87,14 @@ export function convertDevDataToName({ discord, displayName }: DevData, includeM
 
 export function getErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
+}
+
+export function parseToml<T extends zod.ZodType>(input: string, schema: T): zod.infer<T> {
+  try {
+    const parsed = parse(input);
+    return schema.parse(parsed);
+  } catch (error) {
+    console.log(input);
+    throw error;
+  }
 }
