@@ -442,6 +442,22 @@ class Ticket extends BaseParsedDatabaseItem<DatabaseTicket> {
     return await updated.rename({ executor, silent: true });
   }
 
+  async switchPanel({ reason, executor, panel }: TicketAction & { panel: Panel }) {
+    const updated = this.manager.updateTicket({ ...this.toJSON(), panelId: panel.id });
+    const thread = await this.getThread();
+    await thread.send({
+      embeds: [
+        new TicketActionEmbed({
+          title: 'Panel Switched',
+          description: `Ticket Panel Switched from \`${this.panel.name}\` to \`${panel.name}\` by ${getMention(executor)}`,
+          reason,
+          executor
+        })
+      ]
+    });
+    return await updated.rename({ executor, silent: true });
+  }
+
   override toEmbed(): EmbedHelper {
     return super
       .toEmbed()
