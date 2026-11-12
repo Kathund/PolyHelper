@@ -183,7 +183,7 @@ class DatabaseManager extends BasicDatabaseManager {
     const timestamp = Date.now();
     this.db
       .prepare<Pick<DatabaseTicket, keyof BaseDatabaseItem | RequiredDatabaseTicketFields | 'openingTimestamp'>>(
-        'INSERT INTO tickets (id, lastUpdated, name, panelId, threadId, owner, startingMessageId, openingTimestamp) VALUES (@id, @lastUpdated, @name, @panelId, @threadId, @owner, @startingMessageId, @openingTimestamp)'
+        'INSERT INTO tickets (id, lastUpdated, name, panelId, threadId, owner, startingMessageId, openingTimestamp, ticketLogsMesageId) VALUES (@id, @lastUpdated, @name, @panelId, @threadId, @owner, @startingMessageId, @openingTimestamp, @ticketLogsMesageId)'
       )
       .run({ ...data, id, lastUpdated: timestamp, openingTimestamp: timestamp });
     const ticket = this.getTicket(id);
@@ -195,7 +195,7 @@ class DatabaseManager extends BasicDatabaseManager {
     const lastUpdated: BaseDatabaseItem['lastUpdated'] = Date.now();
     const update = this.db
       .prepare<DatabaseTicket>(
-        'UPDATE tickets SET lastUpdated = @lastUpdated, panelId = @panelId, threadId = @threadId, owner = @owner, pinMessageId = @pinMessageId, startingMessageId = @startingMessageId, openingTimestamp = @openingTimestamp, lastMessageTimestamp = @lastMessageTimestamp, inactivityNoticeId = @inactivityNoticeId, inactivitySilenced = @inactivitySilenced, name = @name, taggedProjectId = @taggedProjectId, closedBy = @closedBy, closedReason = @closedReason, closed = @closed WHERE id = @id'
+        'UPDATE tickets SET lastUpdated = @lastUpdated, panelId = @panelId, threadId = @threadId, owner = @owner, pinMessageId = @pinMessageId, startingMessageId = @startingMessageId, openingTimestamp = @openingTimestamp, lastMessageTimestamp = @lastMessageTimestamp, inactivityNoticeId = @inactivityNoticeId, inactivitySilenced = @inactivitySilenced, name = @name, taggedProjectId = @taggedProjectId, closedBy = @closedBy, closedReason = @closedReason, ticketLogsMesageId = @ticketLogsMesageId, closed = @closed WHERE id = @id'
       )
       .run({ ...data, lastUpdated });
     if (update.changes === 0) throw new PolyHelperError('Could not find this ticket?');

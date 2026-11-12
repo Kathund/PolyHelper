@@ -90,12 +90,19 @@ class OpenTicketButton extends DiscordButton {
       }
     }
 
+    const ticketLogs = await this.discord.getChannel('ticketLogs');
+    const logMessage = await ticketLogs.send({
+      content: `Ticket opened by <@${interaction.user.id}> (\`${interaction.user.id}\`) - ${thread.url}`,
+      allowedMentions: { parse: [] }
+    });
+
     const ticket = this.discord.application.database.insertTicket({
       panelId: panel.id,
       threadId: thread.id,
       owner: interaction.user.id,
       startingMessageId: startingMessage.id,
-      name: thread.name
+      name: thread.name,
+      ticketLogsMesageId: logMessage.id
     });
     await ticket.rename({ executor: interaction.user, silent: true });
     await interaction.followUp({

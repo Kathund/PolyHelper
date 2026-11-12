@@ -63,10 +63,12 @@ export const DatabaseTicket = BaseDatabaseItem.extend({
   taggedProjectId: zod.string().nullable(),
   closedBy: zod.string().nullable(),
   closedReason: zod.string().nullable(),
+  ticketLogsMesageId: zod.string().nullable(),
   closed: DatabaseBoolean
 });
 export type DatabaseTicket = zod.infer<typeof DatabaseTicket>;
-export type RequiredDatabaseTicketFields = 'name' | 'panelId' | 'threadId' | 'owner' | 'startingMessageId';
+export type RequiredDatabaseTicketFields =
+  'name' | 'panelId' | 'threadId' | 'owner' | 'startingMessageId' | 'ticketLogsMesageId';
 
 export interface TicketSearchFilters extends DatabaseSearchFilters<'OpeningTimestamp' | 'LastMessageTimestamp'> {
   panelId?: DatabaseTicket['panelId'];

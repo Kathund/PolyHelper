@@ -41,6 +41,7 @@ class Ticket extends BaseParsedDatabaseItem<DatabaseTicket> {
   readonly taggedProjectId: DatabaseTicket['taggedProjectId'];
   readonly closedBy: DatabaseTicket['closedBy'];
   readonly closedReason: DatabaseTicket['closedReason'];
+  readonly ticketLogsMesageId: DatabaseTicket['ticketLogsMesageId'];
   readonly #closed: DatabaseTicket['closed'];
   constructor(data: DatabaseTicket, manager: DatabaseManager) {
     super(data, manager);
@@ -57,6 +58,7 @@ class Ticket extends BaseParsedDatabaseItem<DatabaseTicket> {
     this.taggedProjectId = data.taggedProjectId;
     this.closedBy = data.closedBy;
     this.closedReason = data.closedReason;
+    this.ticketLogsMesageId = data.ticketLogsMesageId;
     this.#closed = data.closed;
   }
 
@@ -256,7 +258,7 @@ class Ticket extends BaseParsedDatabaseItem<DatabaseTicket> {
     if (closeRequest) await this.manager.deleteCloseRequest(closeRequest.id);
     await thread.setArchived(true, `Ticket closed by ${getUserDisplayName(executor)}`);
     this.manager.updateTicket({
-      ...updated.toJSON(),
+      ...(await this.deleteTicketLogMessage()).toJSON(),
       closed: 1,
       closedBy: executor.id,
       closedReason: getReason(reason)
@@ -401,6 +403,20 @@ class Ticket extends BaseParsedDatabaseItem<DatabaseTicket> {
     return updated;
   }
 
+  async getTicketLogMessage(): Promise<Message | null> {
+    if (this.ticketLogsMesageId === null) return null;
+    const logs = await this.manager.application.discord.getChannel('ticketLogs');
+    const message = await logs.messages.fetch(this.ticketLogsMesageId).catch(() => null);
+    if (!message) throw new PolyHelperError('Could not find the matching ticket log message?');
+    return message;
+  }
+
+  async deleteTicketLogMessage(): Promise<Ticket> {
+    const ticketLogMesasge = await this.getTicketLogMessage();
+    if (ticketLogMesasge) await ticketLogMesasge.delete();
+    return this.manager.updateTicket({ ...this.toJSON(), ticketLogsMesageId: null });
+  }
+
   override toEmbed(): EmbedHelper {
     return super
       .toEmbed()
@@ -474,6 +490,7 @@ class Ticket extends BaseParsedDatabaseItem<DatabaseTicket> {
       taggedProjectId: this.taggedProjectId,
       closedBy: this.closedBy,
       closedReason: this.closedReason,
+      ticketLogsMesageId: this.ticketLogsMesageId,
       closed: this.#closed
     };
   }
