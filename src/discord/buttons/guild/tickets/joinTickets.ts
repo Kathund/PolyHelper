@@ -18,16 +18,14 @@ class JoinTicketsButton extends DiscordButton {
     .setResponse(InteractionResponse.Ephemeral);
 
   override async execute(interaction: InteractionWithGuild<ButtonInteraction>) {
-    const compontent = interaction.message.components[0];
-    if (!compontent || compontent.type !== ComponentType.ActionRow) {
-      throw new PolyHelperError('Could not find the list of ticket ids');
-    }
-    const stringSelect = compontent.components[0];
-    if (!stringSelect || stringSelect.type !== ComponentType.StringSelect) {
-      throw new PolyHelperError('Could not find the list of ticket ids');
-    }
+    const stringSelect = interaction.message.components
+      .filter((compontent) => compontent.type === ComponentType.ActionRow)
+      .flatMap((compontent) => compontent.components)
+      .filter((compontent) => compontent.type === ComponentType.StringSelect)
+      .find((compontent) => compontent.customId === 'ticketsSearch');
+    if (!stringSelect) throw new PolyHelperError('Could not find the list of ticket ids');
     const ticketIds = stringSelect.data.options.map((option) => option.value).filter((id) => id !== 'nothing');
-    if (ticketIds.length === 0) throw new PolyHelperError('Could not find any tickets');
+    if (ticketIds.length === 0) throw new PolyHelperError('No ticket ids found');
     await interaction.followUp({
       embeds: [new EmbedHelper().setDescription(`Adding you to ${ticketIds.length} ticket(s)`)]
     });
