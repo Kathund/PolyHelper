@@ -259,13 +259,13 @@ export function CloseRequestButtons(id: BaseDatabaseItem['id'], disabled: boolea
   return [
     new ButtonBuilder()
       .setLabel('Accept & Close')
-      .setCustomId(`closeRequestAccept:${id}`)
+      .setCustomId(`closeRequest:accept:${id}`)
       .setEmoji('☑️')
       .setStyle(ButtonStyle.Success)
       .setDisabled(disabled || id === 'UNKNOWN'),
     new ButtonBuilder()
       .setLabel('Deny & Keep Open')
-      .setCustomId(`closeRequestDeny:${id}`)
+      .setCustomId(`closeRequest:deny:${id}`)
       .setEmoji('❌')
       .setStyle(ButtonStyle.Secondary)
       .setDisabled(disabled || id === 'UNKNOWN')
