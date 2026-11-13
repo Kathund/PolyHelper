@@ -465,7 +465,7 @@ class Ticket extends BaseParsedDatabaseItem<DatabaseTicket> {
       .addFields(
         { name: 'Panel ID', value: this.panelId, format: 'Block' },
         { name: 'Thread', value: `<#${this.threadId}>` },
-        { name: 'Opend', value: Math.floor(this.openingTimestamp / 1000), format: 'Timestamp' },
+        { name: 'Opene\d', value: Math.floor(this.openingTimestamp / 1000), format: 'Timestamp' },
         { name: 'Owner', value: this.owner, format: 'Discord User' },
         { name: 'Tagged Project', value: this.taggedProject?.name ?? 'None', format: 'Block' },
         { name: 'Is Closed', value: this.closed, format: 'Boolean', inline: true },

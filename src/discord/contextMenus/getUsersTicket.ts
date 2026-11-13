@@ -3,6 +3,7 @@ import DiscordContextMenuMetadata from '../private/interactions/contextMenus/Dis
 import { ApplicationCommandType, type ContextMenuCommandType, MessageFlags } from 'discord.js';
 import {
   InteractionFlag,
+  InteractionPermission,
   InteractionResponse,
   type InteractionWithGuild,
   type MessageAndUserContextMenuInteraction
@@ -15,6 +16,7 @@ class GetUsersTicketContextMenu extends DiscordContextMenu<MessageAndUserContext
       .setName("Get User's Tickets")
       .setFlags(InteractionFlag.RequiresGuild)
       .setResponse(InteractionResponse.Ephemeral)
+      .setPermission(InteractionPermission.Support)
       .setType(type);
   }
 
