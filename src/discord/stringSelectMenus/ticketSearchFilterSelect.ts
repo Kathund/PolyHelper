@@ -2,7 +2,7 @@ import Application from '../../Application.ts';
 import BasicInteractionMetadata from '../private/interactions/basic/BasicInteractionMetadata.ts';
 import DiscordStringSelectMenu from '../private/interactions/DiscordStringSelectMenu.ts';
 import PolyHelperError from '../../private/error.ts';
-import { InteractionResponse } from '../../types/discord.ts';
+import { InteractionPermission, InteractionResponse } from '../../types/discord.ts';
 import { getSearchContainer } from '../private/ComponentHelper.ts';
 import type { StringSelectMenuInteraction } from 'discord.js';
 import type { TicketSearch } from '../../types/misc.ts';
@@ -10,7 +10,7 @@ import type { TicketSearch } from '../../types/misc.ts';
 class TicketSearchFilterSelect extends DiscordStringSelectMenu {
   override readonly metadata: BasicInteractionMetadata = new BasicInteractionMetadata('ticketSearchFilterSelect')
     .setResponse(InteractionResponse.Update)
-    .setFetchGuildMember(false);
+    .setPermission(InteractionPermission.Support);
 
   override async execute(interaction: StringSelectMenuInteraction) {
     const [searchId, filter] = this.getArgs(interaction);
