@@ -3,7 +3,12 @@ import BasicInteractionMetadata from '../../../private/interactions/basic/BasicI
 import DiscordButton from '../../../private/interactions/DiscordButton.ts';
 import PolyHelperError from '../../../../private/error.ts';
 import { type ButtonInteraction, MessageFlags } from 'discord.js';
-import { InteractionFlag, InteractionResponse, type InteractionWithGuild } from '../../../../types/discord.ts';
+import {
+  InteractionFlag,
+  InteractionPermission,
+  InteractionResponse,
+  type InteractionWithGuild
+} from '../../../../types/discord.ts';
 import { getSearchContainer } from '../../../private/ComponentHelper.ts';
 import type { TicketSearch } from '../../../../types/misc.ts';
 
@@ -11,7 +16,7 @@ class TicketSearchFilterButton extends DiscordButton {
   override readonly metadata: BasicInteractionMetadata = new BasicInteractionMetadata('ticketSearchFilter')
     .setFlags(InteractionFlag.RequiresGuild)
     .setResponse(InteractionResponse.None)
-    .setFetchGuildMember(false);
+    .setPermission(InteractionPermission.Support);
 
   override async execute(interaction: InteractionWithGuild<ButtonInteraction>) {
     const [id] = this.getArgs(interaction);
