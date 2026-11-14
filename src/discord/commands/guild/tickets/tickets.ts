@@ -14,6 +14,7 @@ import { InteractionFlag, InteractionPermission, type InteractionWithGuild } fro
 import { TicketSearchResults } from '../../../private/ComponentHelper.ts';
 import type CloseRequest from '../../../../database/private/CloseRequest.ts';
 import type Panel from '../../../../database/private/Panel.ts';
+import type Ticket from '../../../../database/private/Ticket.ts';
 import type { TicketSearch } from '../../../../types/misc.ts';
 
 class TicketsCommand extends DiscordCommand {
@@ -23,9 +24,7 @@ class TicketsCommand extends DiscordCommand {
       option
         .setName('view')
         .setDescription('View information for a ticket')
-        .addStringOption((option) =>
-          option.setName('ticket-id').setDescription('The ticket id').setAutocomplete(true).setRequired(true)
-        )
+        .addStringOption((option) => option.setName('ticket-id').setDescription('The ticket id').setAutocomplete(true))
     )
     .addSubcommand((option) =>
       option
@@ -63,8 +62,10 @@ class TicketsCommand extends DiscordCommand {
     .setPermission(InteractionPermission.Support);
 
   async executeView(interaction: InteractionWithGuild<ChatInputCommandInteraction>) {
-    const ticketId = interaction.options.getString('ticket-id', true);
-    const ticket = this.discord.application.database.getTicket(ticketId);
+    let ticket: Ticket | undefined;
+    const ticketId = interaction.options.getString('ticket-id');
+    if (ticketId) ticket = this.discord.application.database.getTicket(ticketId);
+    else ticket = this.getTicket(interaction);
     if (!ticket) throw new PolyHelperError('Could not find the matching ticket?');
     await interaction.followUp(await ticket.toMessageData());
   }
