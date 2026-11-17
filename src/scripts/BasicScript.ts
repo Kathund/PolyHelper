@@ -22,7 +22,7 @@ abstract class BasicScript {
     this.init();
   }
 
-  abstract execute(): Promise<any>;
+  abstract execute(): Promise<any> | void;
 
   async runNow(): Promise<number> {
     return await this.run();

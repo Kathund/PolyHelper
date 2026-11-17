@@ -23,6 +23,7 @@ import type {
   RequiredDatabaseTicketBlacklistUserFields,
   RequiredDatabaseTicketFields,
   SupportTeamSearchFilters,
+  TicketBlacklistUserSearchFilters,
   TicketSearchFilters
 } from '../types/database.ts';
 import type { Message, User } from 'discord.js';
@@ -332,6 +333,31 @@ class DatabaseManager extends BasicDatabaseManager {
     return new TicketBlacklistUser(data, this);
   }
 
+  getTicketBlacklistUsers(filters: TicketBlacklistUserSearchFilters = {}): TicketBlacklistUser[] {
+    const order = this.getOrder(filters, { LastUpdated: 'lastUpdated' });
+    return this.db
+      .prepare<
+        {
+          active: DatabaseTicketBlacklistUser['active'] | null;
+          reason: DatabaseTicketBlacklistUser['reason'] | null;
+          addedBy: DatabaseTicketBlacklistUser['addedBy'] | null;
+          removedBy: Exclude<DatabaseTicketBlacklistUser['removedBy'], null> | null;
+          limit: number;
+        },
+        DatabaseTicketBlacklistUser
+      >(
+        `SELECT * FROM ticketBlacklistUsers WHERE (@active IS NULL OR active = @active) AND (@reason IS NULL OR reason = @reason) AND (@addedBy IS NULL OR addedBy = @addedBy) AND (@removedBy IS NULL OR removedBy = @removedBy)${order} LIMIT @limit`
+      )
+      .all({
+        active: filters.active === undefined ? null : filters.active ? 1 : 0,
+        reason: filters.reason ?? null,
+        addedBy: filters.addedBy ?? null,
+        removedBy: filters.removedBy ?? null,
+        limit: filters.limit ?? -1
+      })
+      .map((data) => new TicketBlacklistUser(data, this));
+  }
+
   getTicketBlacklistUserByUser(user: TicketBlacklistUser['user']): TicketBlacklistUser | undefined {
     const data = this.db
       .prepare<[TicketBlacklistUser['user']], DatabaseTicketBlacklistUser>(
@@ -382,6 +408,10 @@ class DatabaseManager extends BasicDatabaseManager {
       message = await (await this.application.discord.getChannel('botLogs')).send(updated.toMessageData());
     }
     return this.updateTicketBlacklistUser({ ...updated.toJSON(), logMessageId: message.id });
+  }
+
+  deleteTicketBlacklistUser(id: BaseDatabaseItem['id']) {
+    this.db.prepare<BaseDatabaseItem['id']>('DELETE FROM ticketBlacklistUsers WHERE id = ?').run(id);
   }
 
   getProject(id: BaseDatabaseItem['id']): Project | undefined {

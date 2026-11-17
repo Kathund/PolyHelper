@@ -10,7 +10,12 @@ import {
   type ChatInputCommandInteraction,
   MessageFlags
 } from 'discord.js';
-import { InteractionFlag, InteractionPermission, type InteractionWithGuild } from '../../../../types/discord.ts';
+import {
+  InteractionFlag,
+  InteractionPermission,
+  InteractionResponse,
+  type InteractionWithGuild
+} from '../../../../types/discord.ts';
 import { TicketSearchResults } from '../../../private/ComponentHelper.ts';
 import type CloseRequest from '../../../../database/private/CloseRequest.ts';
 import type Panel from '../../../../database/private/Panel.ts';
@@ -59,6 +64,7 @@ class TicketsCommand extends DiscordCommand {
     )
     .addSubcommand((option) => option.setName('overview').setDescription('Overview of the tickets'))
     .setFlags(InteractionFlag.RequiresGuild)
+    .setResponse(InteractionResponse.Ephemeral)
     .setPermission(InteractionPermission.Support);
 
   async executeView(interaction: InteractionWithGuild<ChatInputCommandInteraction>) {

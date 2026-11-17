@@ -118,6 +118,12 @@ export const DatabaseTicketBlacklistUser = BaseDatabaseItem.extend({
 });
 export type DatabaseTicketBlacklistUser = zod.infer<typeof DatabaseTicketBlacklistUser>;
 export type RequiredDatabaseTicketBlacklistUserFields = 'user' | 'reason' | 'addedBy';
+export interface TicketBlacklistUserSearchFilters extends DatabaseSearchFilters {
+  active?: boolean;
+  reason?: DatabaseTicketBlacklistUser['reason'];
+  addedBy?: DatabaseTicketBlacklistUser['addedBy'];
+  removedBy?: Exclude<DatabaseTicketBlacklistUser['removedBy'], null>;
+}
 
 export const DatabaseProject = BaseDatabaseItem.extend({
   name: zod.string(),
