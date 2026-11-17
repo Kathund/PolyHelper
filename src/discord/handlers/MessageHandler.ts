@@ -19,10 +19,12 @@ class MessageHandler {
     const ticket = this.discord.application.database.getTicketByThreadId(message.channelId);
     if (!ticket) return;
     if (ticket.closed) return;
+    const hasMessageFromOwner = ticket.hasMessageFromOwner || message.author.id === ticket.owner;
     this.discord.application.database.updateTicket({
       ...ticket.toJSON(),
       lastMessageTimestamp: message.createdTimestamp,
-      inactivityNoticeId: null
+      inactivityNoticeId: null,
+      hasMessageFromOwner: hasMessageFromOwner ? 1 : 0
     });
   }
 }

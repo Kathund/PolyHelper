@@ -147,6 +147,7 @@ class DatabaseManager extends BasicDatabaseManager {
           owner: DatabaseTicket['owner'] | null;
           pinned: DatabaseTicket['closed'] | null;
           inactivitySilenced: DatabaseTicket['inactivitySilenced'] | null;
+          hasMessageFromOwner: DatabaseTicket['hasMessageFromOwner'] | null;
           autoClose: DatabaseTicket['closed'] | null;
           closed: DatabaseTicket['closed'] | null;
           taggedProjectId: DatabaseTicket['taggedProjectId'] | null;
@@ -155,13 +156,14 @@ class DatabaseManager extends BasicDatabaseManager {
         },
         DatabaseTicket
       >(
-        `SELECT * FROM tickets WHERE (@panelId IS NULL OR panelId = @panelId) AND (@owner IS NULL OR owner = @owner) AND (@pinned IS NULL OR (pinMessageId IS NOT NULL) = @pinned) AND (@inactivitySilenced IS NULL OR inactivitySilenced = @inactivitySilenced) AND (@autoClose IS NULL OR EXISTS (SELECT 1 FROM closeRequests WHERE closeRequests.ticketId = tickets.id AND closeRequests.autoClose IS NOT NULL) = @autoClose) AND (@closed IS NULL OR closed = @closed) AND (@taggedProjectId IS NULL OR taggedProjectId = @taggedProjectId) AND (@closedBy IS NULL OR closedBy = @closedBy)${order} LIMIT @limit`
+        `SELECT * FROM tickets WHERE (@panelId IS NULL OR panelId = @panelId) AND (@owner IS NULL OR owner = @owner) AND (@pinned IS NULL OR (pinMessageId IS NOT NULL) = @pinned) AND (@inactivitySilenced IS NULL OR inactivitySilenced = @inactivitySilenced) AND (@hasMessageFromOwner IS NULL OR hasMessageFromOwner = @hasMessageFromOwner) AND (@autoClose IS NULL OR EXISTS (SELECT 1 FROM closeRequests WHERE closeRequests.ticketId = tickets.id AND closeRequests.autoClose IS NOT NULL) = @autoClose) AND (@closed IS NULL OR closed = @closed) AND (@taggedProjectId IS NULL OR taggedProjectId = @taggedProjectId) AND (@closedBy IS NULL OR closedBy = @closedBy)${order} LIMIT @limit`
       )
       .all({
         panelId: filters.panelId ?? null,
         owner: filters.owner ?? null,
         pinned: filters.pinned === undefined ? null : filters.pinned ? 1 : 0,
         inactivitySilenced: filters.inactivitySilenced === undefined ? null : filters.inactivitySilenced ? 1 : 0,
+        hasMessageFromOwner: filters.hasMessageFromOwner === undefined ? null : filters.hasMessageFromOwner ? 1 : 0,
         autoClose: filters.autoClose === undefined ? null : filters.autoClose ? 1 : 0,
         closed: filters.closed === undefined ? null : filters.closed ? 1 : 0,
         taggedProjectId: filters.taggedProjectId ?? null,
@@ -196,7 +198,7 @@ class DatabaseManager extends BasicDatabaseManager {
     const lastUpdated: BaseDatabaseItem['lastUpdated'] = Date.now();
     const update = this.db
       .prepare<DatabaseTicket>(
-        'UPDATE tickets SET lastUpdated = @lastUpdated, panelId = @panelId, threadId = @threadId, owner = @owner, pinMessageId = @pinMessageId, startingMessageId = @startingMessageId, openingTimestamp = @openingTimestamp, lastMessageTimestamp = @lastMessageTimestamp, inactivityNoticeId = @inactivityNoticeId, inactivitySilenced = @inactivitySilenced, name = @name, taggedProjectId = @taggedProjectId, closedBy = @closedBy, closedReason = @closedReason, ticketLogsMesageId = @ticketLogsMesageId, closed = @closed WHERE id = @id'
+        'UPDATE tickets SET lastUpdated = @lastUpdated, panelId = @panelId, threadId = @threadId, owner = @owner, pinMessageId = @pinMessageId, startingMessageId = @startingMessageId, openingTimestamp = @openingTimestamp, lastMessageTimestamp = @lastMessageTimestamp, inactivityNoticeId = @inactivityNoticeId, inactivitySilenced = @inactivitySilenced, name = @name, taggedProjectId = @taggedProjectId, closedBy = @closedBy, closedReason = @closedReason, ticketLogsMesageId = @ticketLogsMesageId, hasMessageFromOwner = @hasMessageFromOwner, closed = @closed WHERE id = @id'
       )
       .run({ ...data, lastUpdated });
     if (update.changes === 0) throw new PolyHelperError('Could not find this ticket?');

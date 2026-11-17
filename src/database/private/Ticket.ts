@@ -42,6 +42,7 @@ class Ticket extends BaseParsedDatabaseItem<DatabaseTicket> {
   readonly closedBy: DatabaseTicket['closedBy'];
   readonly closedReason: DatabaseTicket['closedReason'];
   readonly ticketLogsMesageId: DatabaseTicket['ticketLogsMesageId'];
+  readonly #hasMessageFromOwner: DatabaseTicket['hasMessageFromOwner'];
   readonly #closed: DatabaseTicket['closed'];
   constructor(data: DatabaseTicket, manager: DatabaseManager) {
     super(data, manager);
@@ -59,6 +60,7 @@ class Ticket extends BaseParsedDatabaseItem<DatabaseTicket> {
     this.closedBy = data.closedBy;
     this.closedReason = data.closedReason;
     this.ticketLogsMesageId = data.ticketLogsMesageId;
+    this.#hasMessageFromOwner = data.hasMessageFromOwner;
     this.#closed = data.closed;
   }
 
@@ -68,6 +70,10 @@ class Ticket extends BaseParsedDatabaseItem<DatabaseTicket> {
 
   get inactivitySilenced(): boolean {
     return Boolean(this.#inactivitySilenced);
+  }
+
+  get hasMessageFromOwner(): boolean {
+    return Boolean(this.#hasMessageFromOwner);
   }
 
   get closed(): boolean {
@@ -471,7 +477,8 @@ class Ticket extends BaseParsedDatabaseItem<DatabaseTicket> {
         { name: 'Tagged Project', value: this.taggedProject?.name ?? 'None', format: 'Block' },
         { name: 'Is Closed', value: this.closed, format: 'Boolean', inline: true },
         { name: 'Is Pinned', value: this.pinned, format: 'Boolean', inline: true },
-        { name: 'Is Silenced', value: this.inactivitySilenced, format: 'Boolean', inline: true }
+        { name: 'Is Silenced', value: this.inactivitySilenced, format: 'Boolean', inline: true },
+        { name: 'Has Message From Owner', value: this.hasMessageFromOwner, format: 'Boolean', inline: true }
       );
   }
 
@@ -533,6 +540,7 @@ class Ticket extends BaseParsedDatabaseItem<DatabaseTicket> {
       closedBy: this.closedBy,
       closedReason: this.closedReason,
       ticketLogsMesageId: this.ticketLogsMesageId,
+      hasMessageFromOwner: this.#hasMessageFromOwner,
       closed: this.#closed
     };
   }

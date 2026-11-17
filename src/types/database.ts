@@ -64,6 +64,7 @@ export const DatabaseTicket = BaseDatabaseItem.extend({
   closedBy: zod.string().nullable(),
   closedReason: zod.string().nullable(),
   ticketLogsMesageId: zod.string().nullable(),
+  hasMessageFromOwner: DatabaseBoolean,
   closed: DatabaseBoolean
 });
 export type DatabaseTicket = zod.infer<typeof DatabaseTicket>;
@@ -75,6 +76,7 @@ export interface TicketSearchFilters extends DatabaseSearchFilters<'OpeningTimes
   owner?: DatabaseTicket['owner'];
   pinned?: boolean;
   inactivitySilenced?: boolean;
+  hasMessageFromOwner?: boolean;
   closed?: boolean;
   autoClose?: boolean;
   taggedProjectId?: Exclude<DatabaseTicket['taggedProjectId'], null>;
