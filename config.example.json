@@ -1,6 +1,6 @@
 {
   "$schema": "./docs/config.schema.json",
-  "configVersion": 5,
+  "configVersion": 6,
   "discord": {
     "token": "DICORD_TOKEN",
     "serverId": "DISCORD_SERVER_ID",
@@ -9,8 +9,6 @@
       "moderator": "DISCORD_ROLE_ID",
       "support": "DISCORD_ROLE_ID",
       "superContributor": "DISCORD_ROLE_ID",
-      "noCounting": "DISCORD_ROLE_ID",
-      "noGiveaway": "DISCORD_ROLE_ID",
       "devAccess": "DISCORD_ROLE_ID",
       "testerPing": "DISCORD_ROLE_ID"
     },

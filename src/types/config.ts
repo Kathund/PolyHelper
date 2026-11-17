@@ -59,8 +59,6 @@ export const ConfigDiscordRoles = zod
     moderator: ConfigDiscordRoleId,
     support: ConfigDiscordRoleId,
     superContributor: ConfigDiscordRoleId,
-    noCounting: ConfigDiscordRoleId,
-    noGiveaway: ConfigDiscordRoleId,
     devAccess: ConfigDiscordRoleId,
     testerPing: ConfigDiscordRoleId
   })
