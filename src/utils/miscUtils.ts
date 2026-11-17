@@ -4,10 +4,35 @@ import zod from 'zod';
 import { DiscordjsError, type HexColorString, type RGBTuple } from 'discord.js';
 import { ErrorEmbed } from '../discord/private/EmbedHelper.ts';
 import { parse } from 'smol-toml';
+import { readdir, stat, unlink } from 'node:fs/promises';
+import { resolve } from 'node:path';
 import type BasicInteractionMetadata from '../discord/private/interactions/basic/BasicInteractionMetadata.ts';
 import type DiscordCommandMetadata from '../discord/private/interactions/commands/DiscordCommandMetadata.ts';
 import type { DevData, ValidErrors } from '../types/application.ts';
 import type { EmbedHelperField } from '../types/discord.ts';
+
+export async function deleteExpiredFiles(
+  directory: string,
+  cutoff: number,
+  shouldDelete: (fileName: string) => boolean = () => true
+): Promise<void> {
+  let entries;
+  try {
+    entries = await readdir(directory, { withFileTypes: true });
+  } catch (error) {
+    if (error instanceof Error && 'code' in error && error.code === 'ENOENT') return;
+    throw error;
+  }
+
+  for (const entry of entries) {
+    const entryPath = resolve(directory, entry.name);
+    if (entry.isDirectory()) {
+      await deleteExpiredFiles(entryPath, cutoff, shouldDelete);
+    } else if (entry.isFile() && shouldDelete(entry.name) && (await stat(entryPath)).mtimeMs < cutoff) {
+      await unlink(entryPath);
+    }
+  }
+}
 
 export function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));

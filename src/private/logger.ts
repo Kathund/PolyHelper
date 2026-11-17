@@ -1,30 +1,11 @@
 import chalk from 'chalk';
 import ms from 'ms';
 import { Logger, createLogger, format, transports } from 'winston';
-import { access, readFile, readdir, stat, unlink } from 'node:fs/promises';
+import { access, readFile } from 'node:fs/promises';
+import { deleteExpiredFiles, getErrorString } from '../utils/miscUtils.ts';
 import { dirname, resolve } from 'node:path';
-import { getErrorString } from '../utils/miscUtils.ts';
 import { getTimestamp, replaceVariables, titleCase } from '../utils/stringUtils.ts';
 import type { LogData } from '../types/misc.ts';
-
-async function deleteExpiredLogs(directory: string, cutoff: number): Promise<void> {
-  let entries;
-  try {
-    entries = await readdir(directory, { withFileTypes: true });
-  } catch (error) {
-    if (error instanceof Error && 'code' in error && error.code === 'ENOENT') return;
-    throw error;
-  }
-
-  for (const entry of entries) {
-    const entryPath = resolve(directory, entry.name);
-    if (entry.isDirectory()) {
-      await deleteExpiredLogs(entryPath, cutoff);
-    } else if (entry.isFile() && entry.name.endsWith('.log') && (await stat(entryPath)).mtimeMs < cutoff) {
-      await unlink(entryPath);
-    }
-  }
-}
 
 const otherLog = { level: 'other', background: chalk.bgCyan.black, color: chalk.reset.cyan };
 const logs: LogData[] = [
@@ -55,7 +36,7 @@ const defaultPath = replaceVariables(logLocationTemplate, { timestamp: new Date(
 const fileLoggingEnabled = config?.logger?.saveToFiles ?? true;
 if (fileLoggingEnabled) {
   const logRoot = resolve(logLocationTemplate.includes('{timestamp}') ? dirname(defaultPath) : defaultPath);
-  await deleteExpiredLogs(logRoot, Date.now() - ms('90d'));
+  await deleteExpiredFiles(logRoot, Date.now() - ms('90d'), (fileName) => fileName.endsWith('.log'));
 }
 const fullTransport = fileLoggingEnabled
   ? new transports.File({ level: 'max', filename: `${defaultPath}/full.log` })
