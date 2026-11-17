@@ -16,6 +16,7 @@ import {
   type Guild,
   Message,
   MessageFlags,
+  PermissionFlagsBits,
   type SendableChannels,
   type TextChannel
 } from 'discord.js';
@@ -185,7 +186,11 @@ class DiscordManager {
         throw new PolyHelperError("The discord server isn't ready. Please try again later");
       }
 
-      const channel = await this.guild.channels.create({ name: type });
+      const channel = await this.guild.channels.create({
+        name: type,
+        permissionOverwrites: [{ id: this.guild.id, deny: [PermissionFlagsBits.ViewChannel] }]
+      });
+      await channel.send({ content: "New auto generated channel created. Please set it's permissions correctly" });
       this.application.config.discord.channels[type] = channel.id;
       await writeFile('config.json', JSON.stringify(this.application.config, null, 2), 'utf-8');
       return channel;
