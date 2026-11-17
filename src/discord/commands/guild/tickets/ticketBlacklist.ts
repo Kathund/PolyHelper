@@ -7,6 +7,7 @@ import {
   InteractionResponse,
   type InteractionWithGuild
 } from '../../../../types/discord.ts';
+import { sendMessageToUser } from '../../../../utils/discordUtils.ts';
 import type { ChatInputCommandInteraction } from 'discord.js';
 
 class TicketBlacklistCommand extends DiscordCommand {
@@ -48,12 +49,19 @@ class TicketBlacklistCommand extends DiscordCommand {
     const blacklist = this.discord.application.database.getTicketBlacklistUserByUser(user.id);
     if (blacklist?.active) throw new PolyHelperError('User already blacklisted');
     const updated = await this.discord.application.database.insertTicketBlacklistUser({
-      user: user.id,
+      user,
       reason: this.getReason(interaction),
       addedBy: interaction.user.id
     });
+    const notification = await sendMessageToUser({ user, embeds: [updated.toUserEmbed()] });
     const message = await updated.getLogMessage();
-    await interaction.followUp({ content: `Blacklist added. ${message?.url ?? ''}`.trim() });
+    await interaction.followUp({
+      content: `Blacklist added. ${
+        notification
+          ? 'The user was sent a DM with the reason.'
+          : "I couldn't send the user a DM. They will see the reason if they try to open a ticket."
+      } ${message?.url ?? ''}`.trim()
+    });
   }
 
   async executeRemove(interaction: InteractionWithGuild<ChatInputCommandInteraction>) {

@@ -4,11 +4,14 @@ import {
   type APIInteractionGuildMember,
   BaseChannel,
   type BaseInteraction,
+  type BaseMessageOptions,
   ButtonStyle,
   type Channel,
   type Client,
+  DiscordAPIError,
   GuildMember,
   InteractionType,
+  Message,
   Role,
   type SendableChannels,
   Team,
@@ -163,5 +166,14 @@ export function convertButtonStyleToHuman(style: ButtonStyle): string {
     case ButtonStyle.Primary:
     default:
       return 'Primary';
+  }
+}
+
+export async function sendMessageToUser(data: BaseMessageOptions & { user: User }): Promise<Message | null> {
+  try {
+    return await data.user.send(data);
+  } catch (error) {
+    if (error instanceof DiscordAPIError && error.code === 50007) return null;
+    throw error;
   }
 }

@@ -25,7 +25,7 @@ import type {
   SupportTeamSearchFilters,
   TicketSearchFilters
 } from '../types/database.ts';
-import type { Message } from 'discord.js';
+import type { Message, User } from 'discord.js';
 
 class DatabaseManager extends BasicDatabaseManager {
   protected override databaseMigrationsPath: string = 'src/database/migrations';
@@ -343,18 +343,19 @@ class DatabaseManager extends BasicDatabaseManager {
   }
 
   async insertTicketBlacklistUser(
-    data: Pick<DatabaseTicketBlacklistUser, RequiredDatabaseTicketBlacklistUserFields>
+    data: Pick<DatabaseTicketBlacklistUser, Exclude<RequiredDatabaseTicketBlacklistUserFields, 'user'>> & { user: User }
   ): Promise<TicketBlacklistUser> {
     const id = crypto.randomUUID();
     this.db
       .prepare<Pick<DatabaseTicketBlacklistUser, keyof BaseDatabaseItem | RequiredDatabaseTicketBlacklistUserFields>>(
         'INSERT INTO ticketBlacklistUsers (id, lastUpdated, user, reason, addedBy) VALUES (@id, @lastUpdated, @user, @reason, @addedBy)'
       )
-      .run({ ...data, id, lastUpdated: Date.now() });
+      .run({ ...data, id, lastUpdated: Date.now(), user: data.user.id });
     const parsed = this.getTicketBlacklistUser(id);
     if (!parsed) throw new PolyHelperError('Something went wrong with inserting this ticket blacklist user');
     const message = await (await this.application.discord.getChannel('botLogs')).send(parsed.toMessageData());
-    return this.updateTicketBlacklistUser({ ...parsed.toJSON(), logMessageId: message.id });
+    const updated = this.updateTicketBlacklistUser({ ...parsed.toJSON(), logMessageId: message.id });
+    return updated;
   }
 
   updateTicketBlacklistUser(data: Omit<DatabaseTicketBlacklistUser, 'lastUpdated'>): TicketBlacklistUser {

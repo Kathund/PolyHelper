@@ -1,6 +1,7 @@
 import BaseParsedDatabaseItem from './BaseParsedDatabaseItem.ts';
+import EmbedHelper from '../../discord/private/EmbedHelper.ts';
+import { CommonDevs } from '../../private/constants.ts';
 import type DatabaseManager from '../DatabaseManager.ts';
-import type EmbedHelper from '../../discord/private/EmbedHelper.ts';
 import type { AutocompleteOption } from '../../types/discord.ts';
 import type { BaseMessageOptions, GuildMember, Message } from 'discord.js';
 import type { DatabaseTicketBlacklistUser } from '../../types/database.ts';
@@ -63,6 +64,15 @@ class TicketBlacklistUser extends BaseParsedDatabaseItem<DatabaseTicketBlacklist
     if (this.removedBy) embed.addFields({ name: 'Removed By', value: this.removedBy, format: 'Discord User' });
     else embed.addFields({ name: 'Removed By', value: '-', format: 'Block' });
     return embed;
+  }
+
+  toUserEmbed(): EmbedHelper {
+    return new EmbedHelper()
+      .setColor('Red')
+      .setTitle('Blacklisted')
+      .setDescription('You are blacklisted from opening tickets')
+      .addFields({ name: 'Reason', value: this.reason, format: 'Block' })
+      .setFooter({ text: `If you have any questions please contact @${CommonDevs.Amber.discord.username}` });
   }
 
   override toMessageData(): BaseMessageOptions {

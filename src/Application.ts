@@ -6,6 +6,7 @@ import ScriptManager from './scripts/ScriptManager.ts';
 import SparkManager from './spark/SparkManager.ts';
 import axios, { AxiosHeaders, type AxiosRequestConfig, type AxiosResponse } from 'axios';
 import packageJson from '../package.json' with { type: 'json' };
+import { CommonDevs } from './private/constants.ts';
 import { canSendMessages } from './utils/discordUtils.ts';
 import { execSync } from 'node:child_process';
 import { getErrorTypeName, getFullErrorEmbed } from './utils/miscUtils.ts';
@@ -54,7 +55,7 @@ class Application {
       const hasPermission = await canSendMessages(channel);
       if (!hasPermission) return;
       await channel.send({
-        content: getErrorTypeName(error) === 'Generic Error' ? '<@1276524855445164098>' : '',
+        content: getErrorTypeName(error) === 'Generic Error' ? `<@${CommonDevs.Amber.discord.id}>` : '',
         embeds: [getFullErrorEmbed(error, extraData)]
       });
     } catch (error) {
