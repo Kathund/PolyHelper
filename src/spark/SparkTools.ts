@@ -31,18 +31,34 @@ const agentRequestReason = 'requested by the agent';
 const helperSystem =
   'You read one source file for a performance investigator. Answer the question using only this file. Cite line numbers like L42 for every claim. Quote the exact condition when the question is about a check or gate. Keep it under 150 words. If the file does not answer the question, say so.';
 
+/*
+ * Agent-chosen values are sent to GitHub, so they are limited to code-style names. This keeps free text such as
+ * support notes out of outbound requests.
+ */
+const codeName = /^[\w.$/+-]+$/;
+
 const repoInput = zod
   .string()
   .regex(/^[\w.-]+\/[\w.-]+$/)
-  .describe('GitHub repository as "owner/name"');
+  .describe('GitHub repository as "owner/name", from the jar scan or lookup_mod');
+
+const pathInput = zod.string().regex(codeName, 'Use a plain file path');
 
 const refInput = zod
   .string()
+  .regex(codeName, 'Use a plain branch, tag or commit')
   .optional()
   .describe("Branch, tag or commit. Defaults to the ref matching the profile's mod version");
 
 function defaultRef(context: SparkToolContext, repo: string): string | null {
   return context.prepass.scanned.find((mod) => mod.repo?.toLowerCase() === repo.toLowerCase())?.ref ?? null;
+}
+
+function assertKnownRepo(context: SparkToolContext, knownRepos: Set<string>, repo: string): void {
+  const lower = repo.toLowerCase();
+  if (!knownRepos.has(lower) && !context.prepass.scanned.some((mod) => mod.repo?.toLowerCase() === lower)) {
+    throw new PolyHelperError(`${repo} is not a source repository of a loaded mod. Find it with lookup_mod`);
+  }
 }
 
 async function getScannedMod(context: SparkToolContext, modId: string): Promise<ScannedMod> {
@@ -163,14 +179,16 @@ function jarClassTool(context: SparkToolContext): ClientTool {
   });
 }
 
-function lookupModTool(context: SparkToolContext): ClientTool {
+function lookupModTool(context: SparkToolContext, knownRepos: Set<string>): ClientTool {
   return defineTool({
     name: 'lookup_mod',
     description:
       'Look up a mod by the mod ID spark reports: its Modrinth page, source repository, issue tracker, whether Polyfrost owns it, and the git ref matching the version in the profile.',
     input: zod.object({ mod: zod.string().min(1).describe('Mod ID, e.g. "sodium"') }),
     run: async ({ mod }) => {
+      if (!context.prepass.loadedMods.has(mod)) throw new PolyHelperError(`${mod} is not loaded in this profile`);
       const source = await findModSource(mod);
+      if (source.repo) knownRepos.add(source.repo.toLowerCase());
       const version = context.prepass.problem.mod_versions[mod] ?? null;
       const ref = source.repo ? await resolveRef(source.repo, version, context.prepass.mcVersion) : null;
       return JSON.stringify({
@@ -186,29 +204,34 @@ function lookupModTool(context: SparkToolContext): ClientTool {
   });
 }
 
-function searchCodeTool(context: SparkToolContext): ClientTool {
+function searchCodeTool(context: SparkToolContext, knownRepos: Set<string>): ClientTool {
   return defineTool({
     name: 'github_search_code',
     description:
       "Find file paths in a GitHub repository that contain the search terms. Only the default branch is indexed, so read the file at the profile's ref afterwards.",
-    input: zod.object({ repo: repoInput, query: zod.string().min(1).describe('Search terms, such as a class name') }),
+    input: zod.object({
+      repo: repoInput,
+      query: zod.string().regex(codeName, 'Use one code name, no spaces').describe('One class, method or field name')
+    }),
     run: async ({ repo, query }) => {
+      assertKnownRepo(context, knownRepos, repo);
       const paths = await searchCode(repo, query);
       return paths.length > 0 ? paths.join('\n') : 'No matches on the default branch.';
     }
   });
 }
 
-function listDirectoryTool(context: SparkToolContext): ClientTool {
+function listDirectoryTool(context: SparkToolContext, knownRepos: Set<string>): ClientTool {
   return defineTool({
     name: 'github_list_directory',
     description: 'List the files and folders at a path in a GitHub repository.',
     input: zod.object({
       repo: repoInput,
-      path: zod.string().default('').describe('Folder path, empty for the root'),
+      path: pathInput.or(zod.literal('')).default('').describe('Folder path, empty for the root'),
       ref: refInput
     }),
     run: async ({ repo, path, ref }) => {
+      assertKnownRepo(context, knownRepos, repo);
       const entries = await listDirectory(repo, path, ref ?? defaultRef(context, repo));
       if (!entries) return `${path} is a file. Use read_source or github_read_file.`;
       return entries.map((entry) => `${entry.type === 'dir' ? 'dir ' : 'file'} ${entry.path}`).join('\n');
@@ -216,18 +239,19 @@ function listDirectoryTool(context: SparkToolContext): ClientTool {
   });
 }
 
-function readFileTool(context: SparkToolContext): ClientTool {
+function readFileTool(context: SparkToolContext, knownRepos: Set<string>): ClientTool {
   return defineTool({
     name: 'github_read_file',
     description: `Read exact lines of a file in a GitHub repository, at most ${maxReadLines} lines per call. Use it to confirm lines that read_source pointed to.`,
     input: zod.object({
       repo: repoInput,
-      path: zod.string().min(1),
+      path: pathInput,
       ref: refInput,
       startLine: zod.number().int().min(1),
       endLine: zod.number().int().min(1)
     }),
     run: async ({ repo, path, ref, startLine, endLine }) => {
+      assertKnownRepo(context, knownRepos, repo);
       const resolved = ref ?? defaultRef(context, repo);
       const text = await getFileText(repo, path, resolved);
       if (text === null) throw new PolyHelperError(`${path} was not found at ${resolved ?? 'the default branch'}`);
@@ -242,18 +266,19 @@ function readFileTool(context: SparkToolContext): ClientTool {
   });
 }
 
-function readSourceTool(context: SparkToolContext): ClientTool {
+function readSourceTool(context: SparkToolContext, knownRepos: Set<string>): ClientTool {
   return defineTool({
     name: 'read_source',
     description:
       'Ask a question about one source file without reading it yourself. A smaller model reads the whole file and answers with line numbers. Its answer is a lead: confirm anything you report as confirmed with github_read_file or jar_class.',
     input: zod.object({
       repo: repoInput,
-      path: zod.string().min(1),
+      path: pathInput,
       question: zod.string().min(5).describe('What you need from the file, e.g. "what makes canDefer() return false?"'),
       ref: refInput
     }),
     run: async ({ repo, path, question, ref }) => {
+      assertKnownRepo(context, knownRepos, repo);
       const resolved = ref ?? defaultRef(context, repo);
       const text = await getFileText(repo, path, resolved);
       if (text === null) throw new PolyHelperError(`${path} was not found at ${resolved ?? 'the default branch'}`);
@@ -301,16 +326,17 @@ export interface SparkToolContext {
 export const submitReportName = 'submit_report';
 
 export function getSparkTools(context: SparkToolContext): ClientTool[] {
+  const knownRepos = new Set<string>();
   const tools = [
     sparkAnalyzeTool(context),
     jarSearchTool(context),
     jarClassTool(context),
-    lookupModTool(context),
-    listDirectoryTool(context),
-    readFileTool(context),
-    readSourceTool(context),
+    lookupModTool(context, knownRepos),
+    listDirectoryTool(context, knownRepos),
+    readFileTool(context, knownRepos),
+    readSourceTool(context, knownRepos),
     submitReportTool()
   ];
-  if (context.config.githubToken) tools.splice(4, 0, searchCodeTool(context));
+  if (context.config.githubToken) tools.splice(4, 0, searchCodeTool(context, knownRepos));
   return tools;
 }
