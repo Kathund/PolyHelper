@@ -15,14 +15,13 @@ This document is generated from the Zod config schema in [`src/types/config.ts`]
 
 ## discord
 
-| Key                   | Type      | Description                                                                                                           |
-| --------------------- | --------- | --------------------------------------------------------------------------------------------------------------------- |
-| `token`               | `string`  | The Discord bot token used to authenticate                                                                            |
-| `serverId`            | `string`  | The Discord server (guild) ID                                                                                         |
-| `roles`               | `object`  | Configuration options the discord roles                                                                               |
-| `channels`            | `object`  | Configuration options the discord channels                                                                            |
-| `embeds`              | `object`  | Configuration options for embeds. Note that embeds aren't normally used in this project but the colors are used still |
-| `minecraftLogCleaner` | `boolean` | Should uploaded minecraft logs be cleaned                                                                             |
+| Key        | Type     | Description                                                                                                           |
+| ---------- | -------- | --------------------------------------------------------------------------------------------------------------------- |
+| `token`    | `string` | The Discord bot token used to authenticate                                                                            |
+| `serverId` | `string` | The Discord server (guild) ID                                                                                         |
+| `roles`    | `object` | Configuration options the discord roles                                                                               |
+| `channels` | `object` | Configuration options the discord channels                                                                            |
+| `embeds`   | `object` | Configuration options for embeds. Note that embeds aren't normally used in this project but the colors are used still |
 
 ### roles
 
@@ -102,7 +101,7 @@ This document is generated from the Zod config schema in [`src/types/config.ts`]
 ---
 
 This document is [auto generated](/scripts/docs/Configuration.ts) and was last updated on
-`Thu, 12 Nov 2026 01:30:38 GMT` (`1794447038209`)
+`Tue, 17 Nov 2026 02:22:02 GMT` (`1794882122565`)
 
 To update this document please run `pnpm docgen` or contact a maintainer and ask them to update it.
 

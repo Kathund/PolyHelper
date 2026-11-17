@@ -79,10 +79,9 @@
           "required": ["colors"],
           "additionalProperties": false,
           "description": "Configuration options for embeds. Note that embeds aren't normally used in this project but the colors are used still"
-        },
-        "minecraftLogCleaner": { "type": "boolean", "description": "Should uploaded minecraft logs be cleaned" }
+        }
       },
-      "required": ["token", "serverId", "roles", "channels", "embeds", "minecraftLogCleaner"],
+      "required": ["token", "serverId", "roles", "channels", "embeds"],
       "additionalProperties": false,
       "description": "Configuration options for discord related stuff"
     },

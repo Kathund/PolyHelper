@@ -1,6 +1,6 @@
 {
   "$schema": "./docs/config.schema.json",
-  "configVersion": 4,
+  "configVersion": 5,
   "discord": {
     "token": "DICORD_TOKEN",
     "serverId": "DISCORD_SERVER_ID",
@@ -31,8 +31,7 @@
         "Red": "#F2545A",
         "Yellow": "#FFCB47"
       }
-    },
-    "minecraftLogCleaner": true
+    }
   },
   "logger": {
     "saveToFiles": true,
