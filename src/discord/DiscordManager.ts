@@ -9,7 +9,6 @@ import StringSelectMenuHandler from './handlers/StringSelectMenuHandler.ts';
 import UserSelectMenuHandler from './handlers/UserSelectMenuHandler.ts';
 import {
   BaseInteraction,
-  ChannelType,
   Client,
   Events,
   GatewayIntentBits,
@@ -17,8 +16,7 @@ import {
   Message,
   MessageFlags,
   PermissionFlagsBits,
-  type SendableChannels,
-  type TextChannel
+  type SendableChannels
 } from 'discord.js';
 import { convertInteractionTypeToHuman } from '../utils/discordUtils.ts';
 import { getCleanErrorEmbed, toError } from '../utils/miscUtils.ts';
@@ -198,12 +196,6 @@ class DiscordManager {
 
     const channel = await this.client.channels.fetch(config);
     if (channel === null || !channel.isSendable()) throw new PolyHelperError(`Channel "${type}" not found!`);
-    return channel;
-  }
-
-  async getSupportChannel(): Promise<TextChannel> {
-    const channel = await this.getChannel('support');
-    if (channel.type !== ChannelType.GuildText) throw new PolyHelperError('Could not find the support channel?');
     return channel;
   }
 }

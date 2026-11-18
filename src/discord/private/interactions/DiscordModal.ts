@@ -11,14 +11,6 @@ abstract class DiscordModal extends BasicInteractionData<ModalSubmitInteraction>
     }
   }
 
-  protected getSelectedChannels(interaction: ModalSubmitInteraction, customId: string): string[] {
-    try {
-      return interaction.fields.getSelectedChannels(customId, true).map((channel) => channel.id);
-    } catch {
-      return [];
-    }
-  }
-
   protected getSelectedRoles(interaction: ModalSubmitInteraction, customId: string): string[] {
     try {
       return interaction.fields
@@ -74,6 +66,20 @@ abstract class DiscordModal extends BasicInteractionData<ModalSubmitInteraction>
 
   protected getSelectedUser(interaction: ModalSubmitInteraction, customId: string): string | undefined {
     return this.getSelectedUsers(interaction, customId)[0];
+  }
+
+  protected getSelectedChannels(interaction: ModalSubmitInteraction, customId: string): string[] {
+    try {
+      return interaction.fields.getSelectedChannels(customId, true).map((channel) => channel.id);
+    } catch {
+      return [];
+    }
+  }
+
+  protected getSelectedChannel(interaction: ModalSubmitInteraction, customId: string): string {
+    const channel = this.getSelectedChannels(interaction, customId)[0];
+    if (!channel) throw new PolyHelperError(`Could not get the "${customId}" channel. There were no selected channels`);
+    return channel;
   }
 }
 

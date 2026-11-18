@@ -1,8 +1,8 @@
 import BasicDatabaseManager from './BasicDatabaseManager.ts';
 import CloseRequest from './private/CloseRequest.ts';
-import DebugTicketsCommand from '../discord/commands/tickets/ticketsDebug.ts';
 import Fuse from 'fuse.js';
 import Panel from './private/Panel.ts';
+import PanelGroup from './private/PanelGroup.ts';
 import PolyHelperError from '../private/error.ts';
 import Project from './private/Project.ts';
 import SupportTeam from './private/SupportTeam.ts';
@@ -14,10 +14,13 @@ import type {
   CloseRequestSearchFilters,
   DatabaseCloseRequest,
   DatabasePanel,
+  DatabasePanelGroup,
+  DatabasePanelWithGroup,
   DatabaseProject,
   DatabaseSupportTeam,
   DatabaseTicket,
   DatabaseTicketBlacklistUser,
+  PanelGroupSearchFilters,
   PanelSearchFilters,
   ProjectSearchFilters,
   RequiredDatabaseTicketBlacklistUserFields,
@@ -32,25 +35,6 @@ class DatabaseManager extends BasicDatabaseManager {
   protected override databaseMigrationsPath: string = 'src/database/migrations';
   constructor(readonly application: Application) {
     super(application.config.other.sqlitedb);
-  }
-
-  async getPanelsMessage(): Promise<Message> {
-    if (!this.application.discord.isClientOnline()) {
-      throw new PolyHelperError("The discord bot doesn't seam to be online? Please restart the application");
-    }
-    const channel = await this.application.discord.getChannel('support');
-    const messageId = this.getMetadataEntry('panels-message');
-    if (!messageId) {
-      const message = await channel.send({ content: 'Setting up panels message' });
-      this.setMetadataEntry({ key: 'panels-message', value: message.id });
-      return await this.getPanelsMessage();
-    }
-    const message = await channel.messages.fetch(messageId.value).catch(() => null);
-    if (!message) {
-      this.deleteMetadataEntry('panels-message');
-      return await this.getPanelsMessage();
-    }
-    return message;
   }
 
   getPanelIds(): BaseDatabaseItem['id'][] {
@@ -68,16 +52,20 @@ class DatabaseManager extends BasicDatabaseManager {
           enabled: DatabasePanel['enabled'] | null;
           supportTeamId: DatabasePanel['supportTeamId'];
           filterSupportTeamId: number;
+          panelGroupId: DatabasePanel['panelGroupId'];
+          filterPanelGroupId: number;
           limit: number;
         },
         DatabasePanel
       >(
-        `SELECT * FROM panels WHERE (@enabled IS NULL OR enabled = @enabled) AND (@filterSupportTeamId = 0 OR supportTeamId IS @supportTeamId)${order} LIMIT @limit`
+        `SELECT * FROM panels WHERE (@enabled IS NULL OR enabled = @enabled) AND (@filterSupportTeamId = 0 OR supportTeamId IS @supportTeamId) AND (@filterPanelGroupId = 0 OR panelGroupId IS @panelGroupId)${order} LIMIT @limit`
       )
       .all({
         enabled: filters.enabled === undefined ? null : filters.enabled ? 1 : 0,
         supportTeamId: filters.supportTeamId ?? null,
         filterSupportTeamId: filters.supportTeamId === undefined ? 0 : 1,
+        panelGroupId: filters.panelGroupId ?? null,
+        filterPanelGroupId: filters.panelGroupId === undefined ? 0 : 1,
         limit: filters.limit ?? -1
       })
       .map((data) => new Panel(data, this));
@@ -89,39 +77,33 @@ class DatabaseManager extends BasicDatabaseManager {
     return new Panel(data, this);
   }
 
-  async insertPanel(data: Omit<DatabasePanel, keyof BaseDatabaseItem>): Promise<Panel> {
+  insertPanel(data: Omit<DatabasePanelWithGroup, keyof BaseDatabaseItem>): Panel {
     const missingData: BaseDatabaseItem = { id: crypto.randomUUID(), lastUpdated: Date.now() };
     this.db
-      .prepare<DatabasePanel>(
-        'INSERT INTO panels (id, lastUpdated, name, title, description, buttonLabel, buttonEmoji, buttonStyle, openingMessage, openingMessageTitle, openingMessageContent, maxOpenTickets, pinnedTicketPrefix, closedTicketPrefix, defaultTicketName, pingSupportTeamOnOpen, supportTeamId, enabled) VALUES (@id, @lastUpdated, @name, @title, @description, @buttonLabel, @buttonEmoji, @buttonStyle, @openingMessage, @openingMessageTitle, @openingMessageContent, @maxOpenTickets, @pinnedTicketPrefix, @closedTicketPrefix, @defaultTicketName, @pingSupportTeamOnOpen, @supportTeamId, @enabled)'
+      .prepare<DatabasePanelWithGroup>(
+        'INSERT INTO panels (id, lastUpdated, name, title, description, buttonLabel, buttonEmoji, buttonStyle, openingMessage, openingMessageTitle, openingMessageContent, maxOpenTickets, pinnedTicketPrefix, closedTicketPrefix, defaultTicketName, pingSupportTeamOnOpen, supportTeamId, panelGroupId, enabled) VALUES (@id, @lastUpdated, @name, @title, @description, @buttonLabel, @buttonEmoji, @buttonStyle, @openingMessage, @openingMessageTitle, @openingMessageContent, @maxOpenTickets, @pinnedTicketPrefix, @closedTicketPrefix, @defaultTicketName, @pingSupportTeamOnOpen, @supportTeamId, @panelGroupId, @enabled)'
       )
       .run({ ...data, ...missingData });
     const panel = this.getPanel(missingData.id);
     if (!panel) throw new PolyHelperError('Something went wrong while inserting a panel');
-    const message = await this.getPanelsMessage();
-    await DebugTicketsCommand.updatePanelsMessage(message);
     return panel;
   }
 
-  async deletePanel(id: BaseDatabaseItem['id']) {
+  deletePanel(id: BaseDatabaseItem['id']) {
     this.db.prepare<BaseDatabaseItem['id']>('DELETE FROM panels WHERE id = ?').run(id);
-    const message = await this.getPanelsMessage();
-    await DebugTicketsCommand.updatePanelsMessage(message);
   }
 
-  async updatePanel(data: Omit<DatabasePanel, 'lastUpdated'>): Promise<Panel> {
+  updatePanel(data: Omit<DatabasePanel, 'lastUpdated'>): Panel {
     const panel = this.getPanel(data.id);
     if (!panel) throw new PolyHelperError('Could not find this panel?');
     const lastUpdated: BaseDatabaseItem['lastUpdated'] = Date.now();
     this.db
       .prepare<DatabasePanel>(
-        'UPDATE panels SET lastUpdated = @lastUpdated, name = @name, title = @title, description = @description, buttonLabel = @buttonLabel, buttonEmoji = @buttonEmoji, buttonStyle = @buttonStyle, openingMessage = @openingMessage, openingMessageTitle = @openingMessageTitle, openingMessageContent = @openingMessageContent, maxOpenTickets = @maxOpenTickets, pinnedTicketPrefix = @pinnedTicketPrefix, closedTicketPrefix = @closedTicketPrefix, defaultTicketName = @defaultTicketName, pingSupportTeamOnOpen = @pingSupportTeamOnOpen, supportTeamId = @supportTeamId, enabled = @enabled WHERE id = @id'
+        'UPDATE panels SET lastUpdated = @lastUpdated, name = @name, title = @title, description = @description, buttonLabel = @buttonLabel, buttonEmoji = @buttonEmoji, buttonStyle = @buttonStyle, openingMessage = @openingMessage, openingMessageTitle = @openingMessageTitle, openingMessageContent = @openingMessageContent, maxOpenTickets = @maxOpenTickets, pinnedTicketPrefix = @pinnedTicketPrefix, closedTicketPrefix = @closedTicketPrefix, defaultTicketName = @defaultTicketName, pingSupportTeamOnOpen = @pingSupportTeamOnOpen, supportTeamId = @supportTeamId, panelGroupId = @panelGroupId, enabled = @enabled WHERE id = @id'
       )
       .run({ ...data, lastUpdated });
     const newPanel = this.getPanel(data.id);
     if (!newPanel) throw new PolyHelperError('Something went wrong while updating a panel');
-    const message = await this.getPanelsMessage();
-    await DebugTicketsCommand.updatePanelsMessage(message);
     return newPanel;
   }
 
@@ -319,10 +301,10 @@ class DatabaseManager extends BasicDatabaseManager {
     return new SupportTeam({ ...data, lastUpdated }, this);
   }
 
-  async deleteSupportTeam(id: BaseDatabaseItem['id']) {
+  deleteSupportTeam(id: BaseDatabaseItem['id']) {
     const supportTeam = this.getSupportTeam(id);
     if (supportTeam) {
-      for (const panel of supportTeam.panels) await this.updatePanel({ ...panel.toJSON(), supportTeamId: null });
+      for (const panel of supportTeam.panels) this.updatePanel({ ...panel.toJSON(), supportTeamId: null });
     }
     this.db.prepare<BaseDatabaseItem['id']>('DELETE FROM supportTeams WHERE id = ?').run(id);
   }
@@ -485,6 +467,50 @@ class DatabaseManager extends BasicDatabaseManager {
 
   deleteProject(id: BaseDatabaseItem['id']) {
     this.db.prepare<BaseDatabaseItem['id']>('DELETE FROM projects WHERE id = ?').run(id);
+  }
+
+  getPanelGroup(id: BaseDatabaseItem['id']): PanelGroup | undefined {
+    const data = this.db
+      .prepare<[BaseDatabaseItem['id']], DatabasePanelGroup>('SELECT * FROM panelGroups WHERE id = ?')
+      .get(id);
+    if (!data) return data;
+    return new PanelGroup(data, this);
+  }
+
+  getPanelGroups(filters: PanelGroupSearchFilters = {}): PanelGroup[] {
+    const order = this.getOrder(filters, { LastUpdated: 'lastUpdated' });
+    return this.db
+      .prepare<{ channelId: DatabasePanelGroup['channelId'] | null; limit: number }, DatabasePanelGroup>(
+        `SELECT * FROM panelGroups WHERE (@channelId IS NULL OR channelId = @channelId)${order} LIMIT @limit`
+      )
+      .all({ channelId: filters.channelId ?? null, limit: filters.limit ?? -1 })
+      .map((data) => new PanelGroup(data, this));
+  }
+
+  insertPanelGroup(data: Omit<DatabasePanelGroup, keyof BaseDatabaseItem>): PanelGroup {
+    const missingData: BaseDatabaseItem = { id: crypto.randomUUID(), lastUpdated: Date.now() };
+    this.db
+      .prepare<DatabasePanelGroup>(
+        'INSERT INTO panelGroups (id, lastUpdated, name, channelId, messageId) VALUES (@id, @lastUpdated, @name, @channelId, @messageId)'
+      )
+      .run({ ...data, ...missingData });
+    return new PanelGroup({ ...data, ...missingData }, this);
+  }
+
+  updatePanelGroup(data: Omit<DatabasePanelGroup, 'lastUpdated'>): PanelGroup {
+    const lastUpdated: BaseDatabaseItem['lastUpdated'] = Date.now();
+    const update = this.db
+      .prepare<DatabasePanelGroup>(
+        'UPDATE panelGroups SET lastUpdated = @lastUpdated, name = @name, channelId = @channelId, messageId = @messageId WHERE id = @id'
+      )
+      .run({ ...data, lastUpdated });
+    if (update.changes === 0) throw new PolyHelperError('Could not find this support team?');
+    return new PanelGroup({ ...data, lastUpdated }, this);
+  }
+
+  deletePanelGroup(id: BaseDatabaseItem['id']) {
+    throw new PolyHelperError('MISSING IMPL');
+    // this.db.prepare<BaseDatabaseItem['id']>('DELETE FROM panelGroups WHERE id = ?').run(id);
   }
 }
 

@@ -1,0 +1,8 @@
+CREATE TABLE panelGroups (
+  id TEXT PRIMARY KEY,
+  lastUpdated INT NOT NULL DEFAULT 0,
+  name TEXT NOT NULL,
+  channelId TEXT NOT NULL,
+  messageId TEXT DEFAULT NULL
+);
+ALTER TABLE panels ADD COLUMN panelGroupId TEXT DEFAULT NULL;
