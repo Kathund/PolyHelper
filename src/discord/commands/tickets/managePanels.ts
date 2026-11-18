@@ -30,11 +30,7 @@ class ManagePanelsCommand extends DiscordCommand {
     .setFetchGuildMember(false);
 
   async executeAdd(interaction: InteractionWithGuild<ChatInputCommandInteraction>) {
-    await interaction.showModal(
-      BasicPanelModal(this.discord.application.database.getPanelGroups())
-        .setCustomId('panelModify')
-        .setTitle('Adding a new Panel')
-    );
+    await interaction.showModal(BasicPanelModal().setCustomId('panelModify').setTitle('Adding a new Panel'));
   }
 
   async executeView(interaction: InteractionWithGuild<ChatInputCommandInteraction>) {
@@ -50,7 +46,7 @@ class ManagePanelsCommand extends DiscordCommand {
     const id = interaction.options.getString('panel-id', true);
     const panel = this.discord.application.database.getPanel(id);
     if (!panel) throw new PolyHelperError('Could not find this panel?');
-    this.discord.application.database.deletePanel(id);
+    await this.discord.application.database.deletePanel(id);
     await interaction.followUp({ content: `Panel "${panel.name}" deleted.` });
   }
 

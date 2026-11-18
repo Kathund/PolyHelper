@@ -1,14 +1,6 @@
 import BaseParsedDatabaseItem from './BaseParsedDatabaseItem.ts';
 import PolyHelperError from '../../private/error.ts';
-import {
-  ActionRowBuilder,
-  type BaseMessageOptions,
-  ButtonBuilder,
-  ButtonStyle,
-  type Role,
-  StringSelectMenuBuilder
-} from 'discord.js';
-import { PanelStringSelectMenu } from '../../discord/private/ComponentHelper.ts';
+import { ActionRowBuilder, type BaseMessageOptions, ButtonBuilder, ButtonStyle, type Role } from 'discord.js';
 import type DatabaseManager from '../DatabaseManager.ts';
 import type EmbedHelper from '../../discord/private/EmbedHelper.ts';
 import type Panel from './Panel.ts';
@@ -71,14 +63,7 @@ class SupportTeam extends BaseParsedDatabaseItem<DatabaseSupportTeam> {
         new ActionRowBuilder<ButtonBuilder>().addComponents(
           new ButtonBuilder().setLabel('Edit').setStyle(ButtonStyle.Secondary).setCustomId(`editSupportTeam:${this.id}`)
         ),
-        this.getRefreshExportRow('supportTeam'),
-        new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(
-          PanelStringSelectMenu(this.panels)
-            .setCustomId('selectPanel')
-            .setPlaceholder('View a Panel')
-            .setMinValues(1)
-            .setMaxValues(1)
-        )
+        this.getRefreshExportRow('supportTeam')
       ]
     };
   }

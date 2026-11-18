@@ -40,18 +40,13 @@ export const DatabasePanel = BaseDatabaseItem.extend({
   defaultTicketName: zod.string(),
   pingSupportTeamOnOpen: DatabaseBoolean,
   supportTeamId: zod.string().nullable(),
-  panelGroupId: zod.string().nullable(),
   enabled: DatabaseBoolean
 });
 export type DatabasePanel = zod.infer<typeof DatabasePanel>;
-export type DatabasePanelWithGroup = Omit<DatabasePanel, 'panelGroupId'> & {
-  panelGroupId: NonNullable<DatabasePanel['panelGroupId']>;
-};
 
 export interface PanelSearchFilters extends DatabaseSearchFilters {
   enabled?: boolean;
   supportTeamId?: DatabasePanel['supportTeamId'];
-  panelGroupId?: DatabasePanel['panelGroupId'];
 }
 
 export const DatabaseTicket = BaseDatabaseItem.extend({
@@ -144,21 +139,10 @@ export interface ProjectSearchFilters extends DatabaseSearchFilters {
   source?: DatabaseProject['source'];
 }
 
-export const DatabasePanelGroup = BaseDatabaseItem.extend({
-  name: zod.string(),
-  channelId: zod.string(),
-  messageId: zod.string().nullable()
-});
-export type DatabasePanelGroup = zod.infer<typeof DatabasePanelGroup>;
-export interface PanelGroupSearchFilters extends DatabaseSearchFilters {
-  channelId?: DatabasePanelGroup['channelId'];
-}
-
 export type DatabaseItem =
   | DatabaseCloseRequest
   | DatabasePanel
   | DatabaseSupportTeam
   | DatabaseTicket
   | DatabaseTicketBlacklistUser
-  | DatabaseProject
-  | DatabasePanelGroup;
+  | DatabaseProject;

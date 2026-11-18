@@ -5,7 +5,6 @@ import { ActionRowBuilder, type BaseMessageOptions, ButtonBuilder, ButtonStyle, 
 import { convertButtonStyleToHuman } from '../../utils/discordUtils.ts';
 import { replaceVariables } from '../../utils/stringUtils.ts';
 import type DatabaseManager from '../DatabaseManager.ts';
-import type PanelGroup from './PanelGroup.ts';
 import type SupportTeam from './SupportTeam.ts';
 import type { AutocompleteOption } from '../../types/discord.ts';
 import type { BaseDatabaseItem, DatabasePanel, TicketSearchFilters } from '../../types/database.ts';
@@ -27,7 +26,6 @@ class Panel extends BaseParsedDatabaseItem<DatabasePanel> {
   readonly defaultTicketName: DatabasePanel['defaultTicketName'];
   readonly #pingSupportTeamOnOpen: DatabasePanel['pingSupportTeamOnOpen'];
   readonly supportTeamId: DatabasePanel['supportTeamId'];
-  readonly panelGroupId: DatabasePanel['panelGroupId'];
   readonly #enabled: DatabasePanel['enabled'];
   constructor(data: DatabasePanel, manager: DatabaseManager) {
     super(data, manager);
@@ -46,7 +44,6 @@ class Panel extends BaseParsedDatabaseItem<DatabasePanel> {
     this.defaultTicketName = data.defaultTicketName;
     this.#pingSupportTeamOnOpen = data.pingSupportTeamOnOpen;
     this.supportTeamId = data.supportTeamId;
-    this.panelGroupId = data.panelGroupId;
     this.#enabled = data.enabled;
   }
 
@@ -71,17 +68,6 @@ class Panel extends BaseParsedDatabaseItem<DatabasePanel> {
     const supportTeam = this.manager.getSupportTeam(this.supportTeamId);
     if (!supportTeam) throw new PolyHelperError('Could not find the matching support team?');
     return supportTeam;
-  }
-
-  get group(): PanelGroup {
-    if (this.panelGroupId === null) {
-      throw new PolyHelperError(
-        'There is no panel group linked to this pannel. Please get an staff member to migrate this panel'
-      );
-    }
-    const panelGroup = this.manager.getPanelGroup(this.panelGroupId);
-    if (!panelGroup) throw new PolyHelperError('Could not find the matching panel group?');
-    return panelGroup;
   }
 
   getStartingMessageData(user: User): BaseMessageOptions {
@@ -170,11 +156,7 @@ class Panel extends BaseParsedDatabaseItem<DatabasePanel> {
           new ButtonBuilder()
             .setCustomId(`panelModify:${this.id}:opening`)
             .setStyle(ButtonStyle.Secondary)
-            .setLabel('Edit Opening Message Options'),
-          new ButtonBuilder()
-            .setCustomId(`panelModify:${this.id}:misc`)
-            .setStyle(ButtonStyle.Secondary)
-            .setLabel('Edit Misc Options')
+            .setLabel('Edit Opening Message Options')
         ),
         this.getRefreshExportRow('panel').addComponents(
           new ButtonBuilder()
@@ -209,7 +191,6 @@ class Panel extends BaseParsedDatabaseItem<DatabasePanel> {
       defaultTicketName: this.defaultTicketName,
       pingSupportTeamOnOpen: this.#pingSupportTeamOnOpen,
       supportTeamId: this.supportTeamId,
-      panelGroupId: this.panelGroupId,
       enabled: this.#enabled
     };
   }

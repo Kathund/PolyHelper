@@ -35,6 +35,7 @@
               "description": "Discord channel id. If null, an auto-generated channel will be used",
               "type": ["string", "null"]
             },
+            "support": { "type": "string", "description": "Discord channel id" },
             "ticketLogs": {
               "description": "Discord channel id. If null, an auto-generated channel will be used",
               "type": ["string", "null"]
@@ -49,7 +50,7 @@
             },
             "testersChat": { "type": "string", "description": "Discord channel id" }
           },
-          "required": ["errorLog", "ticketLogs", "botLogs", "sparkAnalysis", "testersChat"],
+          "required": ["errorLog", "support", "ticketLogs", "botLogs", "sparkAnalysis", "testersChat"],
           "additionalProperties": false,
           "description": "Configuration options the discord channels"
         },

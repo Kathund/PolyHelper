@@ -48,7 +48,7 @@ class OpenTicketButton extends DiscordButton {
     const blacklist = this.discord.application.database.getTicketBlacklistUserByUser(interaction.user.id);
     if (blacklist?.active) return await interaction.followUp({ embeds: [blacklist.toUserEmbed()] });
 
-    const channel = await panel.group.getChannel();
+    const channel = await this.discord.application.discord.getSupportChannel();
     const auditLogReason = `Ticket opened by ${getUserDisplayName(interaction.user)}`;
     const thread = await channel.threads.create({
       name: panel.parseTicketName({ user: interaction.user, shouldReplaceVariables: true }),

@@ -11,6 +11,7 @@ class MessageHandler {
 
   private async onThreadCreated(message: Message) {
     if (message.author.id !== message.client.user.id) return;
+    if (message.channel.id !== this.discord.application.config.discord.channels.support) return;
     await message.delete().catch();
   }
 

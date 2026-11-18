@@ -75,7 +75,7 @@ class ManageSupportTeamsCommand extends DiscordCommand {
     const id = interaction.options.getString('support-team-id', true);
     const supportTeam = this.discord.application.database.getSupportTeam(id);
     if (!supportTeam) throw new PolyHelperError('Could not find this support team?');
-    this.discord.application.database.deleteSupportTeam(id);
+    await this.discord.application.database.deleteSupportTeam(id);
     await interaction.followUp({ content: `Support Team "${supportTeam.name}" deleted.` });
   }
 

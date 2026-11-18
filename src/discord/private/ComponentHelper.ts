@@ -5,8 +5,6 @@ import {
   type BaseMessageOptions,
   ButtonBuilder,
   ButtonStyle,
-  ChannelSelectMenuBuilder,
-  ChannelType,
   CheckboxBuilder,
   ContainerBuilder,
   type HexColorString,
@@ -30,17 +28,10 @@ import { ConfigDiscordEmbedsColors } from '../../types/config.ts';
 import { hexToRgb } from '../../utils/miscUtils.ts';
 import { readFileSync } from 'node:fs';
 import type Panel from '../../database/private/Panel.ts';
-import type PanelGroup from '../../database/private/PanelGroup.ts';
 import type Project from '../../database/private/Project.ts';
 import type SupportTeam from '../../database/private/SupportTeam.ts';
 import type Ticket from '../../database/private/Ticket.ts';
-import type {
-  BaseDatabaseItem,
-  DatabasePanel,
-  DatabasePanelGroup,
-  DatabaseProject,
-  DatabaseSupportTeam
-} from '../../types/database.ts';
+import type { BaseDatabaseItem, DatabasePanel, DatabaseProject, DatabaseSupportTeam } from '../../types/database.ts';
 import type { MinimalRepository } from '../../types/github.ts';
 import type { TicketSearch } from '../../types/misc.ts';
 
@@ -102,31 +93,7 @@ export function OpenTicketButton({
   return button;
 }
 
-export function PanelGroupsStringSelectMenu(
-  panels: (PanelGroup | DatabasePanelGroup)[],
-  currentPanelGroup?: BaseDatabaseItem['id'],
-  maxOptions: number = 25
-): StringSelectMenuBuilder {
-  const visiblePanelGroups = panels.slice(0, maxOptions);
-  const selectedPanelGroup = currentPanelGroup ? panels.find((panel) => panel.id === currentPanelGroup) : undefined;
-  if (selectedPanelGroup && !visiblePanelGroups.some((panel) => panel.id === selectedPanelGroup.id) && maxOptions > 0) {
-    visiblePanelGroups[maxOptions - 1] = selectedPanelGroup;
-  }
-
-  return new StringSelectMenuBuilder().setOptions(
-    visiblePanelGroups.map((group) =>
-      new StringSelectMenuOptionBuilder()
-        .setLabel(group.name)
-        .setValue(group.id)
-        .setDefault(currentPanelGroup === group.id)
-    )
-  );
-}
-
-export function BasicPanelModal(panelGroups: (PanelGroup | DatabasePanelGroup)[], panel?: Panel | DatabasePanel) {
-  if (panelGroups.length === 0) {
-    throw new PolyHelperError('No panel groups found. Please create one before creating a panel');
-  }
+export function BasicPanelModal(panel?: Panel | DatabasePanel) {
   return new ModalBuilder().addLabelComponents(
     new LabelBuilder().setLabel('Panel Name').setTextInputComponent(
       new TextInputBuilder()
@@ -149,12 +116,14 @@ export function BasicPanelModal(panelGroups: (PanelGroup | DatabasePanelGroup)[]
         .setRequired(true)
         .setValue(panel?.description ?? '')
     ),
-    new LabelBuilder().setLabel('Panel Group').setStringSelectMenuComponent(
-      PanelGroupsStringSelectMenu(panelGroups, panel?.panelGroupId ?? undefined)
-        .setCustomId('panelGroupId')
-        .setMinValues(1)
-        .setMaxValues(1)
+    new LabelBuilder().setLabel('Max Open Tickets Open Simultaneously').setTextInputComponent(
+      new TextInputBuilder()
+        .setCustomId('maxOpenTickets')
+        .setStyle(TextInputStyle.Short)
+        .setRequired(true)
+        .setValue(String(panel?.maxOpenTickets ?? 1))
     ),
+
     new LabelBuilder()
       .setLabel('Enabled')
       .setCheckboxComponent(new CheckboxBuilder().setCustomId('enabled').setDefault(Boolean(panel?.enabled ?? 1)))
@@ -162,7 +131,7 @@ export function BasicPanelModal(panelGroups: (PanelGroup | DatabasePanelGroup)[]
 }
 
 export function SupportTeamStringSelectMenu(
-  supportTeams: (SupportTeam | DatabaseSupportTeam)[],
+  supportTeams: DatabaseSupportTeam[] | SupportTeam[],
   supportTeam?: BaseDatabaseItem['id']
 ): StringSelectMenuBuilder {
   return new StringSelectMenuBuilder().setOptions(
@@ -176,7 +145,7 @@ export function SupportTeamStringSelectMenu(
 }
 
 export function SupportTeamPanelModal(
-  supportTeams: (SupportTeam | DatabaseSupportTeam)[],
+  supportTeams: DatabaseSupportTeam[] | SupportTeam[],
   panel?: Panel | DatabasePanel
 ) {
   if (supportTeams.length === 0) {
@@ -286,22 +255,6 @@ export function TicketOpenOptionsPanelModal(panel?: Panel | DatabasePanel) {
     );
 }
 
-export function MiscPanelModal(panel?: Panel | DatabasePanel) {
-  return new ModalBuilder().addLabelComponents(
-    new LabelBuilder().setLabel('Max Open Tickets Open Simultaneously').setTextInputComponent(
-      new TextInputBuilder()
-        .setCustomId('maxOpenTickets')
-        .setStyle(TextInputStyle.Short)
-        .setRequired(true)
-        .setValue(String(panel?.maxOpenTickets ?? 1))
-    ),
-
-    new LabelBuilder()
-      .setLabel('Enabled')
-      .setCheckboxComponent(new CheckboxBuilder().setCustomId('enabled').setDefault(Boolean(panel?.enabled ?? 1)))
-  );
-}
-
 export function CloseRequestButtons(id: BaseDatabaseItem['id'], disabled: boolean = false): ButtonBuilder[] {
   return [
     new ButtonBuilder()
@@ -348,7 +301,7 @@ export function SupportTeamModal(supportTeam?: SupportTeam | DatabaseSupportTeam
 }
 
 export function PanelStringSelectMenu(
-  panels: (Panel | DatabasePanel)[],
+  panels: DatabasePanel[] | Panel[],
   currentPanel?: BaseDatabaseItem['id'],
   maxOptions: number = 25
 ): StringSelectMenuBuilder {
@@ -426,7 +379,7 @@ export function createBooleanFilter(
 
 export function getSearchContainer(
   search: TicketSearch,
-  panels: (Panel | DatabasePanel)[],
+  panels: DatabasePanel[] | Panel[],
   project: Project | undefined,
   searchId: string
 ): PatchedContainerBuilder {
@@ -639,25 +592,4 @@ export function CreateIssueModal(description?: string): ModalBuilder {
           .setValue(description ?? '')
       )
     );
-}
-
-export function PanelGroupModal(panel?: PanelGroup | DatabasePanelGroup) {
-  return new ModalBuilder().addLabelComponents(
-    new LabelBuilder().setLabel('Panel Group Name').setTextInputComponent(
-      new TextInputBuilder()
-        .setCustomId('name')
-        .setStyle(TextInputStyle.Short)
-        .setRequired(true)
-        .setValue(panel?.name ?? '')
-    ),
-    new LabelBuilder().setLabel('channel').setChannelSelectMenuComponent(
-      new ChannelSelectMenuBuilder()
-        .setCustomId('channelId')
-        .setMinValues(1)
-        .setMaxValues(1)
-        .setRequired(true)
-        .setChannelTypes(ChannelType.GuildText)
-        .setDefaultChannels(panel ? [panel.channelId] : [])
-    )
-  );
 }

@@ -39,6 +39,7 @@ This document is generated from the Zod config schema in [`src/types/config.ts`]
 | Key             | Type             | Description                                                         |
 | --------------- | ---------------- | ------------------------------------------------------------------- |
 | `errorLog`      | `string OR null` | Discord channel id. If null, an auto-generated channel will be used |
+| `support`       | `string`         | Discord channel id                                                  |
 | `ticketLogs`    | `string OR null` | Discord channel id. If null, an auto-generated channel will be used |
 | `botLogs`       | `string OR null` | Discord channel id. If null, an auto-generated channel will be used |
 | `sparkAnalysis` | `string OR null` | Discord channel id. If null, an auto-generated channel will be used |
@@ -98,7 +99,7 @@ This document is generated from the Zod config schema in [`src/types/config.ts`]
 ---
 
 This document is [auto generated](/scripts/docs/Configuration.ts) and was last updated on
-`Wed, 18 Nov 2026 15:26:42 GMT` (`1795015602094`)
+`Wed, 18 Nov 2026 06:30:35 GMT` (`1794983435791`)
 
 To update this document please run `pnpm docgen` or contact a maintainer and ask them to update it.
 

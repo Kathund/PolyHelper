@@ -66,6 +66,7 @@ export const ConfigDiscordRoles = zod
 export const ConfigDiscordChannels = zod
   .object({
     errorLog: ConfigDiscordChannelIdGenerate,
+    support: ConfigDiscordChannelId,
     ticketLogs: ConfigDiscordChannelIdGenerate,
     botLogs: ConfigDiscordChannelIdGenerate,
     sparkAnalysis: ConfigDiscordChannelIdGenerate,
