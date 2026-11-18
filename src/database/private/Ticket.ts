@@ -113,7 +113,7 @@ class Ticket extends BaseParsedDatabaseItem<DatabaseTicket> {
   }
 
   async getThread(): Promise<TextThreadChannel> {
-    const channel = await this.manager.application.discord.getSupportChannel();
+    const channel = await this.panel.group.getChannel();
     const thread = await channel.threads.fetch(this.threadId);
     if (!thread) throw new PolyHelperError('Could not find the matching thread?');
     return thread;

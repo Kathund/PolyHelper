@@ -14,7 +14,8 @@ class ConfigManager extends BasicConfigManager<Config> {
       'discord.roles.noCounting': { change: ConfigChangeType.Delete },
       'discord.roles.noGiveaway': { change: ConfigChangeType.Delete }
     },
-    7: { 'discord.channels.support': { change: ConfigChangeType.Delete } }
+    7: { 'discord.channels.support': { change: ConfigChangeType.Delete } },
+    8: { 'discord.channels.support': { change: ConfigChangeType.Delete } }
   };
 
   protected override onConfigValidated(config: Config): Config {

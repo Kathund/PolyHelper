@@ -1,6 +1,6 @@
 {
   "$schema": "./docs/config.schema.json",
-  "configVersion": 7,
+  "configVersion": 8,
   "discord": {
     "token": "DICORD_TOKEN",
     "serverId": "DISCORD_SERVER_ID",
@@ -14,7 +14,6 @@
     },
     "channels": {
       "errorLog": null,
-      "support": "DISCORD_CHANNEL_ID",
       "ticketLogs": null,
       "botLogs": null,
       "sparkAnalysis": null,

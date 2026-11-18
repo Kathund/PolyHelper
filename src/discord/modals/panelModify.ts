@@ -3,7 +3,7 @@ import DiscordModal from '../private/interactions/DiscordModal.ts';
 import PolyHelperError from '../../private/error.ts';
 import { InteractionResponse, type InteractionWithGuild } from '../../types/discord.ts';
 import type Panel from '../../database/private/Panel.ts';
-import type { BaseDatabaseItem, DatabasePanel } from '../../types/database.ts';
+import type { BaseDatabaseItem, DatabasePanel, DatabasePanelWithGroup } from '../../types/database.ts';
 import type { ModalMessageModalSubmitInteraction } from 'discord.js';
 
 class PanelModifyModal extends DiscordModal {
@@ -23,7 +23,7 @@ class PanelModifyModal extends DiscordModal {
       throw new PolyHelperError('The maximum open tickets value must be a whole number greater than zero.');
     }
 
-    const data: Omit<DatabasePanel, keyof BaseDatabaseItem> = {
+    const data: Omit<DatabasePanelWithGroup, keyof BaseDatabaseItem> = {
       name: this.getTextInputValue(interaction, 'name') ?? panel?.name ?? 'UNKNOWN',
       title: this.getTextInputValue(interaction, 'title') ?? panel?.title ?? 'UNKNOWN',
       description: this.getTextInputValue(interaction, 'description') ?? panel?.description ?? 'UNKNOWN',
@@ -52,15 +52,16 @@ class PanelModifyModal extends DiscordModal {
         '[{panelName}] ticket-{username}',
       pingSupportTeamOnOpen: (panel?.pingSupportTeamOnOpen ?? true) ? 1 : 0,
       supportTeamId: this.getStringSelectValue(interaction, 'supportTeamId') ?? panel?.supportTeamId ?? null,
+      panelGroupId: this.getStringSelectValue(interaction, 'panelGroupId') ?? panel?.panelGroupId ?? 'UNKNOWN',
       enabled: this.getCheckbox(interaction, 'enabled', panel?.enabled ?? true) ? 1 : 0
     };
 
     const [id] = this.getArgs(interaction);
     if (id === undefined) {
-      const panel = await this.discord.application.database.insertPanel(data);
+      const panel = this.discord.application.database.insertPanel(data);
       await interaction.followUp({ ...panel.toMessageData(), content: `Panel "${panel.name}" created.` });
     } else {
-      const panel = await this.discord.application.database.updatePanel({ id, ...data });
+      const panel = this.discord.application.database.updatePanel({ id, ...data });
       await interaction.followUp({ content: `Panel "${panel.name}" updated.` });
     }
   }

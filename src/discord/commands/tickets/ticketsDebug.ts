@@ -2,22 +2,14 @@ import DiscordCommand from '../../private/interactions/commands/DiscordCommand.t
 import DiscordCommandMetadata from '../../private/interactions/commands/DiscordCommandMetadata.ts';
 import EmbedHelper from '../../private/EmbedHelper.ts';
 import PolyHelperError from '../../../private/error.ts';
-import {
-  ActionRowBuilder,
-  type ButtonBuilder,
-  type ChatInputCommandInteraction,
-  type Message,
-  PermissionFlagsBits
-} from 'discord.js';
+import { type ChatInputCommandInteraction, PermissionFlagsBits } from 'discord.js';
 import { InteractionPermission, InteractionResponse, type InteractionWithGuild } from '../../../types/discord.ts';
-import { OpenTicketButton } from '../../private/ComponentHelper.ts';
 import { isSupportMember } from '../../../utils/discordUtils.ts';
 import { toError } from '../../../utils/miscUtils.ts';
 
 class DebugTicketsCommand extends DiscordCommand {
   override readonly metadata = new DiscordCommandMetadata()
     .setName('debug-tickets')
-    .addSubcommand((option) => option.setName('refresh-panels-message').setDescription('refresh the panels message'))
     .addSubcommand((option) =>
       option
         .setName('sync-support-and-ticket-ping')
@@ -33,29 +25,6 @@ class DebugTicketsCommand extends DiscordCommand {
     .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild)
     .setResponse(InteractionResponse.Ephemeral)
     .setPermission(InteractionPermission.Admin);
-
-  static async updatePanelsMessage(message: Message): Promise<Message> {
-    const panels = message.client.discordManager.application.database.getPanels({ sort: 'None' });
-    return await message.edit({
-      content: '',
-      embeds: [
-        new EmbedHelper()
-          .setTitle(`${message.client.discordManager.guild?.name ?? 'UNKNOWN'} support tickets`)
-          .setColor('Blue')
-          .setFields(...panels.map((panel) => ({ name: `**${panel.title}**`, value: panel.description })))
-      ],
-      components:
-        panels.length === 0
-          ? []
-          : [new ActionRowBuilder<ButtonBuilder>().addComponents(panels.map((panel) => OpenTicketButton(panel)))]
-    });
-  }
-
-  async executeRefreshPanelsMessage(interaction: InteractionWithGuild<ChatInputCommandInteraction>) {
-    const message = await this.discord.application.database.getPanelsMessage();
-    await DebugTicketsCommand.updatePanelsMessage(message);
-    await interaction.followUp({ content: `Message updated - ${message.url}` });
-  }
 
   async executeSyncSupportAndTicketPing(interaction: InteractionWithGuild<ChatInputCommandInteraction>) {
     const supportTeam = this.discord.application.database.getSupportTeam(
