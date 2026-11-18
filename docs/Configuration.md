@@ -99,11 +99,11 @@ This document is generated from the Zod config schema in [`src/types/config.ts`]
 ---
 
 This document is [auto generated](/scripts/docs/Configuration.ts) and was last updated on
-`Tue, 17 Nov 2026 04:32:53 GMT` (`1794889973275`)
+`Wed, 18 Nov 2026 06:30:35 GMT` (`1794983435791`)
 
 To update this document please run `pnpm docgen` or contact a maintainer and ask them to update it.
 
 ---
 
 Feel free to reach out to the maintainers directly on Discord.
-[@amber.rip](https://discord.com/users/1276524855445164098), [@ruintd](https://discord.com/users/157917665162297344)
+[@amber.rip](https://discord.com/users/1276524855445164098)
