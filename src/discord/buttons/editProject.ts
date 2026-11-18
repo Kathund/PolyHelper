@@ -1,16 +1,16 @@
 import BasicInteractionMetadata from '../private/interactions/basic/BasicInteractionMetadata.ts';
 import DiscordButton from '../private/interactions/DiscordButton.ts';
 import PolyHelperError from '../../private/error.ts';
-import { InteractionResponse } from '../../types/discord.ts';
+import { InteractionResponse, type InteractionWithGuild } from '../../types/discord.ts';
 import { ProjectModal } from '../private/ComponentHelper.ts';
 import type { ButtonInteraction } from 'discord.js';
 
 class EditProjectButton extends DiscordButton {
-  override readonly metadata: BasicInteractionMetadata = new BasicInteractionMetadata('editProject')
+  override readonly metadata = new BasicInteractionMetadata('editProject')
     .setResponse(InteractionResponse.None)
     .setFetchGuildMember(false);
 
-  override async execute(interaction: ButtonInteraction) {
+  override async execute(interaction: InteractionWithGuild<ButtonInteraction>) {
     const [id] = this.getArgs(interaction);
     if (id === undefined) throw new PolyHelperError('Could not find this project?');
     const project = this.discord.application.database.getProject(id);

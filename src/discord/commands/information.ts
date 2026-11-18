@@ -10,9 +10,10 @@ import {
   TextDisplayBuilder
 } from 'discord.js';
 import { PatchedContainerBuilder, ViewCreditsButton, ViewSourceCodeButton } from '../private/ComponentHelper.ts';
+import type { InteractionWithGuild } from '../../types/discord.ts';
 
 class InformationCommand extends DiscordCommand {
-  override readonly metadata: DiscordCommandMetadata = new DiscordCommandMetadata()
+  override readonly metadata = new DiscordCommandMetadata()
     .setName('information')
     .setDescription('Shows information about the bot.');
 
@@ -62,7 +63,7 @@ class InformationCommand extends DiscordCommand {
     ];
   }
 
-  override async execute(interaction: ChatInputCommandInteraction) {
+  override async execute(interaction: InteractionWithGuild<ChatInputCommandInteraction>) {
     await interaction.followUp({
       components: InformationCommand.InformationComponent(interaction.user.id),
       flags: MessageFlags.IsComponentsV2,

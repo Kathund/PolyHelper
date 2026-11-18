@@ -2,18 +2,12 @@ import DiscordContextMenu from '../private/interactions/contextMenus/DiscordCont
 import DiscordContextMenuMetadata from '../private/interactions/contextMenus/DiscordContextMenuMetadata.ts';
 import PolyHelperError from '../../private/error.ts';
 import { ApplicationCommandType, MessageContextMenuCommandInteraction } from 'discord.js';
-import {
-  InteractionFlag,
-  InteractionPermission,
-  InteractionResponse,
-  type InteractionWithGuild
-} from '../../types/discord.ts';
+import { InteractionPermission, InteractionResponse, type InteractionWithGuild } from '../../types/discord.ts';
 import { findSparkId } from '../../utils/sparkUtils.ts';
 
 class ScanSparkLogContextMenu extends DiscordContextMenu<MessageContextMenuCommandInteraction> {
   override metadata = new DiscordContextMenuMetadata()
     .setName('Scan Spark Log')
-    .setFlags(InteractionFlag.RequiresGuild)
     .setPermission(InteractionPermission.Support)
     .setResponse(InteractionResponse.Ephemeral)
     .setType(ApplicationCommandType.Message);

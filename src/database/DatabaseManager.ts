@@ -1,6 +1,6 @@
 import BasicDatabaseManager from './BasicDatabaseManager.ts';
 import CloseRequest from './private/CloseRequest.ts';
-import DebugTicketsCommand from '../discord/commands/guild/tickets/ticketsDebug.ts';
+import DebugTicketsCommand from '../discord/commands/tickets/ticketsDebug.ts';
 import Fuse from 'fuse.js';
 import Panel from './private/Panel.ts';
 import PolyHelperError from '../private/error.ts';

@@ -1,6 +1,5 @@
 import BasicInteractionMetadata from './interactions/basic/BasicInteractionMetadata.ts';
 import PolyHelperError from '../../private/error.ts';
-import assert from 'node:assert';
 import { type BaseInteraction, Collection } from 'discord.js';
 import { InteractionFlag, InteractionPermission, type InteractionTypes } from '../../types/discord.ts';
 import {
@@ -52,11 +51,11 @@ abstract class BasicInteractionHandler<
       this.checkInteractionFlags(interaction, element.metadata.flags);
       await this.checkPermission(interaction, element.metadata.permission);
 
-      if (element.metadata.flags.includes(InteractionFlag.RequiresGuild)) {
-        assert(interaction.guild);
-        if (element.metadata.fetchGuildMember) {
-          interaction.member = await interaction.guild.members.fetch(interaction.user.id);
-        }
+      if (!isInteractionInsideOfGuild(interaction)) {
+        throw new PolyHelperError('Please run this interaction inside of a guild');
+      }
+      if (element.metadata.fetchGuildMember) {
+        interaction.member = await interaction.guild.members.fetch(interaction.user.id);
       }
 
       const shouldReturn = await this.beforeExectue(interaction, element);
@@ -133,12 +132,7 @@ abstract class BasicInteractionHandler<
   }
 
   checkInteractionFlags(interaction: Interaction, flags: InteractionFlag[]) {
-    const checks: Array<[boolean, string]> = [
-      [
-        flags.includes(InteractionFlag.RequiresGuild) && !isInteractionInsideOfGuild(interaction),
-        'Please run this interaction inside of a guild.'
-      ]
-    ];
+    const checks: Array<[boolean, string]> = [];
 
     for (const [failed, message] of checks) if (failed) throw new PolyHelperError(message);
   }

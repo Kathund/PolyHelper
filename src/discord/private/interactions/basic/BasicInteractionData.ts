@@ -35,7 +35,7 @@ abstract class BasicInteractionData<
     return ticket;
   }
 
-  abstract execute(interaction: Interaction): Promise<any>;
+  abstract execute(interaction: InteractionWithGuild<Interaction>): Promise<any>;
 }
 
 export default BasicInteractionData;

@@ -2,17 +2,17 @@ import Application from '../../Application.ts';
 import BasicInteractionMetadata from '../private/interactions/basic/BasicInteractionMetadata.ts';
 import DiscordUserSelectMenu from '../private/interactions/DiscordUserSelectMenu.ts';
 import PolyHelperError from '../../private/error.ts';
-import { InteractionPermission, InteractionResponse } from '../../types/discord.ts';
+import { InteractionPermission, InteractionResponse, type InteractionWithGuild } from '../../types/discord.ts';
 import { getSearchContainer } from '../private/ComponentHelper.ts';
 import type { TicketSearch } from '../../types/misc.ts';
 import type { UserSelectMenuInteraction } from 'discord.js';
 
 class TicketSearchFilterUser extends DiscordUserSelectMenu {
-  override readonly metadata: BasicInteractionMetadata = new BasicInteractionMetadata('ticketSearchFilterUser')
+  override readonly metadata = new BasicInteractionMetadata('ticketSearchFilterUser')
     .setResponse(InteractionResponse.Update)
     .setPermission(InteractionPermission.Support);
 
-  override async execute(interaction: UserSelectMenuInteraction) {
+  override async execute(interaction: InteractionWithGuild<UserSelectMenuInteraction>) {
     const [searchId, filter] = this.getArgs(interaction);
     if (!searchId || (filter !== 'owner' && filter !== 'closedBy')) {
       throw new PolyHelperError('Invalid ticket search user filter');

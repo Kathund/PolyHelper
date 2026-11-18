@@ -2,17 +2,17 @@ import Application from '../../Application.ts';
 import BasicInteractionMetadata from '../private/interactions/basic/BasicInteractionMetadata.ts';
 import DiscordStringSelectMenu from '../private/interactions/DiscordStringSelectMenu.ts';
 import PolyHelperError from '../../private/error.ts';
-import { InteractionPermission, InteractionResponse } from '../../types/discord.ts';
+import { InteractionPermission, InteractionResponse, type InteractionWithGuild } from '../../types/discord.ts';
 import { getSearchContainer } from '../private/ComponentHelper.ts';
 import type { StringSelectMenuInteraction } from 'discord.js';
 import type { TicketSearch } from '../../types/misc.ts';
 
 class TicketSearchFilterTaggedProjectSelector extends DiscordStringSelectMenu {
-  override readonly metadata: BasicInteractionMetadata = new BasicInteractionMetadata('ticketSearchFilterTaggedProject')
+  override readonly metadata = new BasicInteractionMetadata('ticketSearchFilterTaggedProject')
     .setResponse(InteractionResponse.Update)
     .setPermission(InteractionPermission.Support);
 
-  override async execute(interaction: StringSelectMenuInteraction) {
+  override async execute(interaction: InteractionWithGuild<StringSelectMenuInteraction>) {
     const [id] = this.getArgs(interaction);
     if (id === undefined) throw new PolyHelperError('Could not find the ticket search ID');
     const filters = Application.cache.get<TicketSearch>(`ticket:search:${id}`);

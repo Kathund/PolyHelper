@@ -9,8 +9,8 @@ class DiscordContextMenuMetadata extends ContextMenuCommandBuilder {
   #cleanErrorTitle: string | null = null;
   constructor() {
     super();
-    this.setContexts(InteractionContextType.Guild, InteractionContextType.BotDM, InteractionContextType.PrivateChannel);
-    this.setIntegrationTypes(ApplicationIntegrationType.GuildInstall, ApplicationIntegrationType.UserInstall);
+    this.setContexts(InteractionContextType.Guild);
+    this.setIntegrationTypes(ApplicationIntegrationType.GuildInstall);
   }
 
   override setName(name: string): this {

@@ -24,27 +24,19 @@ export const CommonDevs = {
     discord: { username: 'amber.rip', id: '1276524855445164098' },
     note: ':purple_heart:'
   },
-  KTibow: { displayName: 'KTibow', githubUsername: 'KTibow', type: 'Contributor' },
-  Lunaynx: {
-    displayName: 'Luna',
-    githubUsername: 'KTibow',
-    type: 'Contributor',
-    avatarURL: 'https://cdn.discordapp.com/avatars/1080661733531729940/4782a3b36c9a07ebb9e7352e315872cd.png?size=4096',
-    discord: { username: 'lunaynx', id: '1080661733531729940' }
-  },
-  Ruin: {
-    displayName: 'Fayne',
-    githubUsername: 'RuinTD',
-    type: 'Maintainer',
-    avatarURL: 'https://cdn.discordapp.com/avatars/157917665162297344/d2951bb98e7267a2a587fd812d6c2db4.png?size=4096',
-    discord: { username: 'ruintd', id: '157917665162297344' }
-  },
   Wyvest: {
     displayName: 'Wyvest',
     githubUsername: 'Wyvest',
     type: 'Contributor',
     avatarURL: 'https://cdn.discordapp.com/avatars/647041687541121044/f8c7038ccdac490b676281bba2793670.png?size=4096',
     discord: { username: 'wyvest', id: '647041687541121044' }
+  },
+  Deftu: {
+    displayName: 'Deftu',
+    githubUsername: 'Deftu',
+    type: 'Contributor',
+    avatarURL: 'https://cdn.discordapp.com/avatars/982012892285128845/46eebaf733b7074ef0324bfb94f9e3e5.png?size=4096',
+    discord: { username: 'deftu', id: '982012892285128845' }
   }
 } satisfies Record<string, DevData>;
 

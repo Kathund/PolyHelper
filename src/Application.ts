@@ -12,7 +12,7 @@ import { execSync } from 'node:child_process';
 import { getErrorTypeName, getFullErrorEmbed } from './utils/miscUtils.ts';
 import type { Config } from './types/config.ts';
 import type { EmbedHelperField } from './types/discord.ts';
-import type { RuntimeInformation, ValidErrors } from './types/application.ts';
+import type { MaintainerDevData, RuntimeInformation, ValidErrors } from './types/application.ts';
 
 class Application {
   static readonly package: typeof packageJson = packageJson;
@@ -55,7 +55,13 @@ class Application {
       const hasPermission = await canSendMessages(channel);
       if (!hasPermission) return;
       await channel.send({
-        content: getErrorTypeName(error) === 'Generic Error' ? `<@${CommonDevs.Amber.discord.id}>` : '',
+        content:
+          getErrorTypeName(error) === 'Generic Error'
+            ? Object.values(CommonDevs)
+                .filter((dev): dev is MaintainerDevData => dev.type === 'Maintainer')
+                .map(({ discord }) => `<@${discord.id}>`)
+                .join('')
+            : '',
         embeds: [getFullErrorEmbed(error, extraData)]
       });
     } catch (error) {

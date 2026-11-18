@@ -1,11 +1,6 @@
 import BasicInteractionHandler from '../private/BasicInteractionHandler.ts';
-import {
-  ApplicationIntegrationType,
-  type ContextMenuCommandInteraction,
-  InteractionContextType,
-  MessageFlags
-} from 'discord.js';
-import { InteractionFlag, InteractionResponse } from '../../types/discord.ts';
+import { type ContextMenuCommandInteraction, MessageFlags } from 'discord.js';
+import { InteractionResponse } from '../../types/discord.ts';
 import { readdir } from 'node:fs/promises';
 import type DiscordContextMenu from '../private/interactions/contextMenus/DiscordContextMenu.ts';
 
@@ -29,8 +24,7 @@ class ContextMenuHandler extends BasicInteractionHandler<
 
   override async loadElements() {
     this.elements.clear();
-    const global = [];
-    const guild = [];
+    const contextMenus = [];
 
     const buttonFiles = await readdir('./src/discord/contextMenus/', { recursive: true, encoding: 'utf-8' }).then(
       (files) => files.filter((file) => file.endsWith('.ts'))
@@ -41,20 +35,13 @@ class ContextMenuHandler extends BasicInteractionHandler<
       ).default(this.discord);
       if (contextMenu.metadata.name) {
         for (const metadata of [contextMenu.metadata, ...contextMenu.variations]) {
-          if (metadata.flags.includes(InteractionFlag.RequiresGuild)) {
-            metadata.setContexts(InteractionContextType.Guild);
-            metadata.setIntegrationTypes(ApplicationIntegrationType.GuildInstall);
-            guild.push(metadata.toJSON());
-          } else {
-            global.push(metadata.toJSON());
-          }
+          contextMenus.push(metadata.toJSON());
           this.elements.set(`${metadata.toJSON().type}:${metadata.name}`, contextMenu);
         }
       }
     }
     console.discord(`Successfully loaded ${this.elements.size} context menu(s).`);
-
-    return { global, guild };
+    return contextMenus;
   }
 }
 

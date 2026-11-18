@@ -1,15 +1,15 @@
 import BasicInteractionMetadata from '../private/interactions/basic/BasicInteractionMetadata.ts';
 import DiscordStringSelectMenu from '../private/interactions/DiscordStringSelectMenu.ts';
 import PolyHelperError from '../../private/error.ts';
-import { InteractionPermission, InteractionResponse } from '../../types/discord.ts';
+import { InteractionPermission, InteractionResponse, type InteractionWithGuild } from '../../types/discord.ts';
 import type { StringSelectMenuInteraction } from 'discord.js';
 
 class TicketSearchSelector extends DiscordStringSelectMenu {
-  override readonly metadata: BasicInteractionMetadata = new BasicInteractionMetadata('ticketsSearch')
+  override readonly metadata = new BasicInteractionMetadata('ticketsSearch')
     .setResponse(InteractionResponse.Ephemeral)
     .setPermission(InteractionPermission.Support);
 
-  override async execute(interaction: StringSelectMenuInteraction) {
+  override async execute(interaction: InteractionWithGuild<StringSelectMenuInteraction>) {
     const ticketId = interaction.values[0];
     if (!ticketId) throw new PolyHelperError('Could not find the a ticket id');
     const ticket = this.discord.application.database.getTicket(ticketId);

@@ -23,7 +23,7 @@ class RuntimeSettingsCommand extends DiscordCommand {
       );
   }
 
-  override readonly metadata: DiscordCommandMetadata = new DiscordCommandMetadata()
+  override readonly metadata = new DiscordCommandMetadata()
     .setName('runtime-settings')
     .addSubcommandGroup(this.createSubcommandGroup('panels-message'))
     .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild)

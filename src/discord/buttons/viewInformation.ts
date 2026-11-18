@@ -8,14 +8,14 @@ import {
   type MessageEditOptions,
   MessageFlags
 } from 'discord.js';
-import { InteractionResponse } from '../../types/discord.ts';
+import { InteractionResponse, type InteractionWithGuild } from '../../types/discord.ts';
 
 class ViewInformationButton extends DiscordButton {
-  override readonly metadata: BasicInteractionMetadata = new BasicInteractionMetadata('viewInformation')
+  override readonly metadata = new BasicInteractionMetadata('viewInformation')
     .setResponse(InteractionResponse.None)
     .setFetchGuildMember(false);
 
-  override async execute(interaction: ButtonInteraction) {
+  override async execute(interaction: InteractionWithGuild<ButtonInteraction>) {
     const [ownerId] = this.getArgs(interaction);
     const message: MessageEditOptions & InteractionReplyOptions = {
       components: InformationCommand.InformationComponent(interaction.user.id),

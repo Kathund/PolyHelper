@@ -1,14 +1,13 @@
 import BasicInteractionHandler from '../private/BasicInteractionHandler.ts';
 import {
-  ApplicationIntegrationType,
   type AutocompleteInteraction,
   type ChatInputCommandInteraction,
-  InteractionContextType,
   MessageFlags,
   REST,
+  type RESTPostAPIChatInputApplicationCommandsJSONBody,
   Routes
 } from 'discord.js';
-import { InteractionFlag, InteractionResponse } from '../../types/discord.ts';
+import { InteractionResponse } from '../../types/discord.ts';
 import { readdir } from 'node:fs/promises';
 import { toCamelCase, upperFirst } from '../../utils/stringUtils.ts';
 import { toError } from '../../utils/miscUtils.ts';
@@ -71,8 +70,7 @@ class CommandHandler extends BasicInteractionHandler<ChatInputCommandInteraction
 
   override async loadElements() {
     this.elements.clear();
-    const global = [];
-    const guild = [];
+    const commands: RESTPostAPIChatInputApplicationCommandsJSONBody[] = [];
 
     const commandFiles = await readdir('./src/discord/commands/', { recursive: true, encoding: 'utf-8' }).then(
       (files) => files.filter((file) => file.endsWith('.ts'))
@@ -81,13 +79,7 @@ class CommandHandler extends BasicInteractionHandler<ChatInputCommandInteraction
     for (const file of commandFiles) {
       const command: DiscordCommand = new (await import(`../commands/${file}`)).default(this.discord);
       if (command.metadata.name) {
-        if (command.metadata.flags.includes(InteractionFlag.RequiresGuild)) {
-          command.metadata.setContexts(InteractionContextType.Guild);
-          command.metadata.setIntegrationTypes(ApplicationIntegrationType.GuildInstall);
-          guild.push(command.metadata.toJSON());
-        } else {
-          global.push(command.metadata.toJSON());
-        }
+        commands.push(command.metadata.toJSON());
         this.elements.set(command.metadata.name, command);
       }
     }
@@ -101,15 +93,12 @@ class CommandHandler extends BasicInteractionHandler<ChatInputCommandInteraction
     ).toString('ascii');
 
     await rest
-      .put(Routes.applicationCommands(clientId), { body: [...global, ...contextMenus.global] })
-      .then(() => console.discord(`Successfully reloaded ${global.length} application command(s).`));
-    await rest
       .put(Routes.applicationGuildCommands(clientId, this.discord.application.config.discord.serverId), {
-        body: [...guild, ...contextMenus.guild]
+        body: [...commands, ...contextMenus]
       })
       .then(() =>
         console.discord(
-          `Successfully reloaded ${guild.length} application guilds command(s) into ${this.discord.application.config.discord.serverId}.`
+          `Successfully reloaded ${[...commands, ...contextMenus].length} application guilds command(s) into ${this.discord.application.config.discord.serverId}.`
         )
       );
   }

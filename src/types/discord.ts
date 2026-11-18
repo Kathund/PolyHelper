@@ -33,7 +33,7 @@ declare module 'discord.js' {
 }
 
 export enum InteractionFlag {
-  RequiresGuild
+  PlaceholderFlag
 }
 
 export enum InteractionPermission {

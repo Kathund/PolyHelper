@@ -20,6 +20,7 @@ export interface BasicDevData {
 }
 
 export interface MaintainerDevData extends BasicDevData {
+  note: string;
   type: 'Maintainer';
   avatarURL: string;
   discord: DevDiscordData;

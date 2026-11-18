@@ -2,17 +2,17 @@ import Application from '../../Application.ts';
 import BasicInteractionMetadata from '../private/interactions/basic/BasicInteractionMetadata.ts';
 import DiscordStringSelectMenu from '../private/interactions/DiscordStringSelectMenu.ts';
 import PolyHelperError from '../../private/error.ts';
-import { InteractionResponse } from '../../types/discord.ts';
+import { InteractionResponse, type InteractionWithGuild } from '../../types/discord.ts';
 import { createIssue } from '../../utils/githubUtils.ts';
 import type { CreateIssueOptions } from '../../types/github.ts';
 import type { StringSelectMenuInteraction } from 'discord.js';
 
 class SelectIssue extends DiscordStringSelectMenu {
-  override readonly metadata: BasicInteractionMetadata = new BasicInteractionMetadata('selectIssue')
+  override readonly metadata = new BasicInteractionMetadata('selectIssue')
     .setResponse(InteractionResponse.Update)
     .setFetchGuildMember(false);
 
-  override async execute(interaction: StringSelectMenuInteraction) {
+  override async execute(interaction: InteractionWithGuild<StringSelectMenuInteraction>) {
     const [id] = this.getArgs(interaction);
     if (!id) throw new PolyHelperError('Could not find the id for this create issue');
     const data = Application.cache.get<Pick<CreateIssueOptions, 'title' | 'description'>>(`createIssue:input:${id}`);

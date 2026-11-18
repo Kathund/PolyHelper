@@ -2,17 +2,11 @@ import DiscordContextMenu from '../private/interactions/contextMenus/DiscordCont
 import DiscordContextMenuMetadata from '../private/interactions/contextMenus/DiscordContextMenuMetadata.ts';
 import { ApplicationCommandType, MessageContextMenuCommandInteraction } from 'discord.js';
 import { CreateIssueModal } from '../private/ComponentHelper.ts';
-import {
-  InteractionFlag,
-  InteractionPermission,
-  InteractionResponse,
-  type InteractionWithGuild
-} from '../../types/discord.ts';
+import { InteractionPermission, InteractionResponse, type InteractionWithGuild } from '../../types/discord.ts';
 
 class CreateIssueContextMenu extends DiscordContextMenu<MessageContextMenuCommandInteraction> {
   override metadata = new DiscordContextMenuMetadata()
     .setName('Create Isssue')
-    .setFlags(InteractionFlag.RequiresGuild)
     .setPermission(InteractionPermission.SuperContributor)
     .setResponse(InteractionResponse.None)
     .setType(ApplicationCommandType.Message);

@@ -12,9 +12,10 @@ import { CommonDevs, getParsedMiscCredits } from '../../private/constants.ts';
 import { DevTypes } from '../../types/application.ts';
 import { PatchedContainerBuilder, ViewInformationButton, ViewSourceCodeButton } from '../private/ComponentHelper.ts';
 import { convertDevDataToName } from '../../utils/miscUtils.ts';
+import type { InteractionWithGuild } from '../../types/discord.ts';
 
 class CreditsCommand extends DiscordCommand {
-  override readonly metadata: DiscordCommandMetadata = new DiscordCommandMetadata()
+  override readonly metadata = new DiscordCommandMetadata()
     .setName('credits')
     .setDescription('Shows the credits of the people who make this possible');
 
@@ -53,7 +54,7 @@ class CreditsCommand extends DiscordCommand {
     ];
   }
 
-  override async execute(interaction: ChatInputCommandInteraction) {
+  override async execute(interaction: InteractionWithGuild<ChatInputCommandInteraction>) {
     await interaction.followUp({
       components: CreditsCommand.CreditsComponent(interaction.user.id),
       flags: MessageFlags.IsComponentsV2,

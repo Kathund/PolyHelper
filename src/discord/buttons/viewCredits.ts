@@ -7,14 +7,14 @@ import {
   type MessageEditOptions,
   MessageFlags
 } from 'discord.js';
-import { InteractionResponse } from '../../types/discord.ts';
+import { InteractionResponse, type InteractionWithGuild } from '../../types/discord.ts';
 
 class ViewCreditsButton extends DiscordButton {
-  override readonly metadata: BasicInteractionMetadata = new BasicInteractionMetadata('viewCredits')
+  override readonly metadata = new BasicInteractionMetadata('viewCredits')
     .setResponse(InteractionResponse.None)
     .setFetchGuildMember(false);
 
-  override async execute(interaction: ButtonInteraction) {
+  override async execute(interaction: InteractionWithGuild<ButtonInteraction>) {
     const [ownerId] = this.getArgs(interaction);
     const message: MessageEditOptions & InteractionReplyOptions = {
       components: CreditsCommand.CreditsComponent(interaction.user.id),
