@@ -1,6 +1,6 @@
 {
   "$schema": "./docs/config.schema.json",
-  "configVersion": 6,
+  "configVersion": 7,
   "discord": {
     "token": "DICORD_TOKEN",
     "serverId": "DISCORD_SERVER_ID",
