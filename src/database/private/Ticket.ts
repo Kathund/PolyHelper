@@ -133,7 +133,6 @@ class Ticket extends BaseParsedDatabaseItem<DatabaseTicket> {
   }
 
   async sendInactivityNotice(): Promise<Ticket> {
-    await this.getOwnerDiscord();
     const thread = await this.getThread();
     if (!thread.sendable || thread.locked) return this;
     if (thread.archived) await thread.setArchived(false, 'Sending a ticket inactivity reminder');
