@@ -4,11 +4,13 @@ import PolyHelperError from '../../private/error.ts';
 import { ActionRowBuilder, type BaseMessageOptions, ButtonBuilder, ButtonStyle, type User } from 'discord.js';
 import { convertButtonStyleToHuman } from '../../utils/discordUtils.ts';
 import { replaceVariables } from '../../utils/stringUtils.ts';
+import type CloseRequest from './CloseRequest.ts';
 import type DatabaseManager from '../DatabaseManager.ts';
 import type PanelGroup from './PanelGroup.ts';
 import type SupportTeam from './SupportTeam.ts';
+import type Ticket from './Ticket.ts';
 import type { AutocompleteOption } from '../../types/discord.ts';
-import type { BaseDatabaseItem, DatabasePanel, TicketSearchFilters } from '../../types/database.ts';
+import type { CloseRequestSearchFilters, DatabasePanel, TicketSearchFilters } from '../../types/database.ts';
 import type { TemplatePrimitive } from '../../types/misc.ts';
 
 class Panel extends BaseParsedDatabaseItem<DatabasePanel> {
@@ -102,27 +104,17 @@ class Panel extends BaseParsedDatabaseItem<DatabasePanel> {
     };
   }
 
-  getTickets(filters: Omit<TicketSearchFilters, 'panelId'> = {}) {
+  getTickets(filters: Omit<TicketSearchFilters, 'panelId'> = {}): Ticket[] {
     return this.manager.getTickets({ ...filters, panelId: this.id });
   }
 
-  getOverviewFields(): {
-    id: BaseDatabaseItem['id'];
-    name: DatabasePanel['name'];
-    enabled: boolean;
-    tickets: number;
-    openTickets: number;
-    pinnedTickets: number;
-  } {
-    const tickets = this.getTickets();
-    return {
-      id: this.id,
-      name: this.name,
-      enabled: this.enabled,
-      tickets: tickets.length,
-      openTickets: tickets.filter((ticket) => !ticket.closed).length,
-      pinnedTickets: tickets.filter((ticket) => ticket.pinned).length
-    };
+  getCloseRequests(filters: CloseRequestSearchFilters = {}): CloseRequest[] {
+    const { limit, ...searchFilters } = filters;
+    const ticketIds = new Set(this.getTickets({ sort: 'None' }).map((ticket) => ticket.id));
+    const closeRequests = this.manager
+      .getCloseRequests(searchFilters)
+      .filter((closeRequest) => ticketIds.has(closeRequest.ticketId));
+    return limit === undefined || limit < 0 ? closeRequests : closeRequests.slice(0, limit);
   }
 
   parseTicketName({ user, shouldReplaceVariables }: { user: User; shouldReplaceVariables?: boolean }): string {
@@ -170,7 +162,7 @@ class Panel extends BaseParsedDatabaseItem<DatabasePanel> {
           new ButtonBuilder()
             .setCustomId(`panelModify:${this.id}:opening`)
             .setStyle(ButtonStyle.Secondary)
-            .setLabel('Edit Opening Message Options'),
+            .setLabel('Edit Opening Options'),
           new ButtonBuilder()
             .setCustomId(`panelModify:${this.id}:misc`)
             .setStyle(ButtonStyle.Secondary)

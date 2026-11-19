@@ -94,7 +94,11 @@ class PanelGroup extends BaseParsedDatabaseItem<DatabasePanelGroup> {
           new ButtonBuilder()
             .setLabel('Refresh Message')
             .setStyle(ButtonStyle.Secondary)
-            .setCustomId(`refreshPanelGroupMessage:${this.id}`)
+            .setCustomId(`refreshPanelGroupMessage:${this.id}`),
+          new ButtonBuilder()
+            .setLabel('View Overview')
+            .setStyle(ButtonStyle.Secondary)
+            .setCustomId(`viewPanelGroupOverview:${this.id}`)
         ),
         this.getRefreshExportRow('panelGroup'),
         new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(

@@ -1,19 +1,9 @@
 import DiscordCommand from '../../private/interactions/commands/DiscordCommand.ts';
 import DiscordCommandMetadata from '../../private/interactions/commands/DiscordCommandMetadata.ts';
-import EmbedHelper from '../../private/EmbedHelper.ts';
 import PolyHelperError from '../../../private/error.ts';
-import {
-  ActionRowBuilder,
-  type BaseMessageOptions,
-  ButtonBuilder,
-  ButtonStyle,
-  type ChatInputCommandInteraction,
-  MessageFlags
-} from 'discord.js';
+import { type ChatInputCommandInteraction, MessageFlags } from 'discord.js';
 import { InteractionPermission, InteractionResponse, type InteractionWithGuild } from '../../../types/discord.ts';
 import { TicketSearchResults } from '../../private/ComponentHelper.ts';
-import type CloseRequest from '../../../database/private/CloseRequest.ts';
-import type Panel from '../../../database/private/Panel.ts';
 import type Ticket from '../../../database/private/Ticket.ts';
 import type { TicketSearch } from '../../../types/misc.ts';
 
@@ -57,7 +47,6 @@ class TicketsCommand extends DiscordCommand {
         )
         .addUserOption((option) => option.setName('closed-by').setDescription('who closed the ticket'))
     )
-    .addSubcommand((option) => option.setName('overview').setDescription('Overview of the tickets'))
     .setResponse(InteractionResponse.Ephemeral)
     .setPermission(InteractionPermission.Support);
 
@@ -95,79 +84,6 @@ class TicketsCommand extends DiscordCommand {
       flags: MessageFlags.IsComponentsV2,
       allowedMentions: { parse: [] }
     });
-  }
-
-  static getTicketsOverviewMessageData(panels: Panel[], closeRequests: CloseRequest[]): BaseMessageOptions {
-    const parsedPanels = panels.sort((a, b) => a.name.localeCompare(b.name)).map((panel) => panel.getOverviewFields());
-    return {
-      embeds: [
-        new EmbedHelper()
-          .setStyle('DataInfo')
-          .setTitle('Showing Tickets Overview')
-          .setFields(
-            parsedPanels.map((panel) => ({
-              name: panel.name,
-              value: [
-                `**ID:** \`${panel.id}\``,
-                `**Enabled:** ${panel.enabled ? ':white_check_mark: Yes' : ':x: No'}`,
-                `**Total Tickets:** ${panel.tickets}`,
-                `**Open Tickets:** ${panel.openTickets}`,
-                `**Pinned Tickets:** ${panel.pinnedTickets}`
-              ].join('\n'),
-              inline: true
-            }))
-          )
-          .addFields(
-            {
-              name: 'Total Tickets',
-              value: parsedPanels.reduce((total, panel) => total + panel.tickets, 0),
-              inline: true,
-              format: 'Number'
-            },
-            {
-              name: 'Total Open Tickets',
-              value: parsedPanels.reduce((total, panel) => total + panel.openTickets, 0),
-              inline: true,
-              format: 'Number'
-            },
-            {
-              name: 'Total Pinned Tickets',
-              value: parsedPanels.reduce((total, panel) => total + panel.pinnedTickets, 0),
-              inline: true,
-              format: 'Number'
-            },
-            { name: 'Total Close Requests', value: closeRequests.length, inline: true, format: 'Number' },
-            {
-              name: 'Total Close Requests With Auto Close',
-              value: closeRequests.filter((closeRequest) => closeRequest.autoClose !== null).length,
-              inline: true,
-              format: 'Number'
-            }
-          )
-      ],
-      components: [
-        new ActionRowBuilder<ButtonBuilder>().setComponents(
-          new ButtonBuilder()
-            .setCustomId('joinActiveTickets')
-            .setLabel('Join Ticket Threads')
-            .setStyle(ButtonStyle.Secondary),
-
-          new ButtonBuilder()
-            .setLabel('Refresh Embed')
-            .setCustomId('refreshTicketsOverviewEmbed')
-            .setStyle(ButtonStyle.Secondary)
-        )
-      ]
-    };
-  }
-
-  async executeOverview(interaction: InteractionWithGuild<ChatInputCommandInteraction>) {
-    await interaction.followUp(
-      TicketsCommand.getTicketsOverviewMessageData(
-        this.discord.application.database.getPanels(),
-        this.discord.application.database.getCloseRequests()
-      )
-    );
   }
 
   override execute(interaction: ChatInputCommandInteraction): Promise<any> {

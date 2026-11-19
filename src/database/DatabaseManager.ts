@@ -515,7 +515,7 @@ class DatabaseManager extends BasicDatabaseManager {
       await message.delete();
       panelGroup.panels.forEach((panel) => this.updatePanel({ ...panel.toJSON(), panelGroupId: null }));
     }
-    // this.db.prepare<BaseDatabaseItem['id']>('DELETE FROM panelGroups WHERE id = ?').run(id);
+    this.db.prepare<BaseDatabaseItem['id']>('DELETE FROM panelGroups WHERE id = ?').run(id);
   }
 }
 
