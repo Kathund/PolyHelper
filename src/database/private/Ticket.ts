@@ -449,6 +449,11 @@ class Ticket extends BaseParsedDatabaseItem<DatabaseTicket> {
   }
 
   async switchPanel({ reason, executor, panel }: TicketAction & { panel: Panel }) {
+    if (panel.id === this.id) throw new PolyHelperError('Cannot switch panels. These are the same panel');
+    if (panel.group.id !== this.panel.group.id) {
+      throw new PolyHelperError("Cannot switch panels. The panel groups don't match");
+    }
+
     const updated = this.manager.updateTicket({ ...this.toJSON(), panelId: panel.id });
     const thread = await this.getThread();
     await thread.send({

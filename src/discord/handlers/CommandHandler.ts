@@ -1,4 +1,5 @@
 import BasicInteractionHandler from '../private/BasicInteractionHandler.ts';
+import PolyHelperError from '../../private/error.ts';
 import {
   type AutocompleteInteraction,
   type ChatInputCommandInteraction,
@@ -7,12 +8,12 @@ import {
   type RESTPostAPIChatInputApplicationCommandsJSONBody,
   Routes
 } from 'discord.js';
-import { InteractionResponse } from '../../types/discord.ts';
+import { InteractionResponse, type InteractionWithGuild } from '../../types/discord.ts';
+import { isInteractionInsideOfGuild } from '../../utils/discordUtils.ts';
 import { readdir } from 'node:fs/promises';
 import { toCamelCase, upperFirst } from '../../utils/stringUtils.ts';
 import { toError } from '../../utils/miscUtils.ts';
 import type DiscordCommand from '../private/interactions/commands/DiscordCommand.ts';
-import type PolyHelperError from '../../private/error.ts';
 
 class CommandHandler extends BasicInteractionHandler<ChatInputCommandInteraction, DiscordCommand> {
   override getRawIdFromInteraction(interaction: ChatInputCommandInteraction) {
@@ -24,7 +25,10 @@ class CommandHandler extends BasicInteractionHandler<ChatInputCommandInteraction
     await interaction.deferReply({ flags: element.shouldEphemeral(interaction) ? MessageFlags.Ephemeral : undefined });
   }
 
-  override async beforeExectue(interaction: ChatInputCommandInteraction, element: DiscordCommand): Promise<boolean> {
+  override async beforeExectue(
+    interaction: InteractionWithGuild<ChatInputCommandInteraction>,
+    element: DiscordCommand
+  ): Promise<boolean> {
     const subcommand = this.checkForSubcommand(interaction);
     if (subcommand) {
       const funcName = `execute${upperFirst(toCamelCase(subcommand))}`;
@@ -49,6 +53,13 @@ class CommandHandler extends BasicInteractionHandler<ChatInputCommandInteraction
     const element = this.elements.get(interaction.commandName);
     if (!element) return;
     try {
+      if (!isInteractionInsideOfGuild(interaction)) {
+        throw new PolyHelperError('Please run this interaction inside of a guild');
+      }
+      if (element.metadata.fetchGuildMember) {
+        interaction.member = await interaction.guild.members.fetch(interaction.user.id);
+      }
+
       const hasPermission = await this.checkPermission(interaction, element.metadata.permission).catch(
         (error: PolyHelperError) => error.message
       );

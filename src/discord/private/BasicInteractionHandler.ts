@@ -49,7 +49,6 @@ abstract class BasicInteractionHandler<
       await this.handleResponse(interaction, element);
 
       this.checkInteractionFlags(interaction, element.metadata.flags);
-      await this.checkPermission(interaction, element.metadata.permission);
 
       if (!isInteractionInsideOfGuild(interaction)) {
         throw new PolyHelperError('Please run this interaction inside of a guild');
@@ -57,6 +56,8 @@ abstract class BasicInteractionHandler<
       if (element.metadata.fetchGuildMember) {
         interaction.member = await interaction.guild.members.fetch(interaction.user.id);
       }
+
+      await this.checkPermission(interaction, element.metadata.permission);
 
       const shouldReturn = await this.beforeExectue(interaction, element);
       if (shouldReturn) return;

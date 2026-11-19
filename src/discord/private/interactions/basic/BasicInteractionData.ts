@@ -29,7 +29,7 @@ abstract class BasicInteractionData<
     return split.slice(1);
   }
 
-  getTicket(interaction: InteractionWithGuild<Interaction>): Ticket {
+  getTicket(interaction: InteractionWithGuild<BaseInteraction>): Ticket {
     const ticket = this.discord.application.database.getTicketByThreadId(interaction.channel.id);
     if (!ticket) throw new PolyHelperError('This is not a ticket. Please run this command inside of a ticket');
     return ticket;

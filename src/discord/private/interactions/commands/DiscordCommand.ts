@@ -1,5 +1,5 @@
 import BasicInteractionData from '../basic/BasicInteractionData.ts';
-import { type AutocompleteOption, InteractionResponse } from '../../../../types/discord.ts';
+import { type AutocompleteOption, InteractionResponse, type InteractionWithGuild } from '../../../../types/discord.ts';
 import { getReason, titleCaseFromCamel } from '../../../../utils/stringUtils.ts';
 import type DiscordCommandMetadata from './DiscordCommandMetadata.ts';
 import type { AutocompleteInteraction, ChatInputCommandInteraction } from 'discord.js';
@@ -16,7 +16,7 @@ abstract class DiscordCommand extends BasicInteractionData<ChatInputCommandInter
   }
 
   // eslint-disable-next-line require-await
-  async autocomplete(interaction: AutocompleteInteraction): Promise<AutocompleteOption[]> {
+  async autocomplete(interaction: InteractionWithGuild<AutocompleteInteraction>): Promise<AutocompleteOption[]> {
     const focusedOption = interaction.options.getFocused(true);
 
     switch (focusedOption.name) {
@@ -28,6 +28,10 @@ abstract class DiscordCommand extends BasicInteractionData<ChatInputCommandInter
         return this.discord.application.database
           .getTickets({ closed: true, limit: 25 })
           .map((ticket) => ticket.toAutocompleteOption());
+      case 'same-group-panel-id':
+        return this.discord.application.database
+          .getPanels({ panelGroupId: this.getTicket(interaction).panel.group.id, limit: 25 })
+          .map((panel) => panel.toAutocompleteOption());
       case 'panel-id':
         return this.discord.application.database.getPanels({ limit: 25 }).map((panel) => panel.toAutocompleteOption());
       case 'panel-group-id':

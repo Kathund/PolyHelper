@@ -9,7 +9,7 @@ class SwitchPanelCommand extends DiscordCommand {
     .setName('switchpanel')
     .setDescription('Switch the panel of a ticket')
     .addStringOption((option) =>
-      option.setName('panel-id').setDescription('the new panel').setAutocomplete(true).setRequired(true)
+      option.setName('same-group-panel-id').setDescription('the new panel').setAutocomplete(true).setRequired(true)
     )
     .addStringOption((option) => option.setName('reason').setDescription('The reason for switching the panel'))
     .setResponse(InteractionResponse.Ephemeral)
@@ -17,7 +17,7 @@ class SwitchPanelCommand extends DiscordCommand {
 
   override async execute(interaction: InteractionWithGuild<ChatInputCommandInteraction>) {
     await interaction.followUp({ content: 'Attempting to switch panel...' });
-    const id = interaction.options.getString('panel-id', true);
+    const id = interaction.options.getString('same-group-panel-id', true);
     const panel = this.discord.application.database.getPanel(id);
     if (!panel) throw new PolyHelperError('Could not find this panel?');
     await this.getTicket(interaction).switchPanel({
