@@ -20,7 +20,7 @@ class PanelGroupModifyModal extends DiscordModal {
     const panelGroup = this.getPanelGroup(interaction);
     const data: Omit<DatabasePanelGroup, keyof BaseDatabaseItem> = {
       name: this.getTextInputValue(interaction, 'name') ?? panelGroup?.name ?? 'UNKNOWN',
-      channelId: this.getSelectedChannel(interaction, 'channelId'),
+      channelId: this.getSelectedChannel(interaction, 'channelId', true),
       messageId: panelGroup?.messageId ?? null
     };
 

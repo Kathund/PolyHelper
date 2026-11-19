@@ -33,10 +33,10 @@ class PanelGroup extends BaseParsedDatabaseItem<DatabasePanelGroup> {
   }
 
   async getChannel(): Promise<TextChannel> {
-    if (!this.manager.application.discord.isClientOnline()) {
+    if (!this.manager.application.discord.isGuildReady()) {
       throw new PolyHelperError("The discord bot doesn't seam to be online? Please restart the application");
     }
-    const channel = await this.manager.application.discord.client.channels.fetch(this.channelId);
+    const channel = await this.manager.application.discord.guild.channels.fetch(this.channelId);
     if (!channel) throw new PolyHelperError('Could not find the linked channel for this panel group');
     if (!channel.isSendable() || channel.type !== ChannelType.GuildText) {
       throw new PolyHelperError('The linked channel is the wrong type. Please use a guild text channel');

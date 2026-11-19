@@ -53,6 +53,8 @@ class PanelModifyModal extends DiscordModal {
       pingSupportTeamOnOpen: (panel?.pingSupportTeamOnOpen ?? true) ? 1 : 0,
       supportTeamId: this.getStringSelectValue(interaction, 'supportTeamId') ?? panel?.supportTeamId ?? null,
       panelGroupId: this.getStringSelectValue(interaction, 'panelGroupId') ?? panel?.panelGroupId ?? 'UNKNOWN',
+      requiredOpeningRoleId:
+        this.getSelectedRole(interaction, 'requiredOpeningRoleId') ?? panel?.requiredOpeningRoleId ?? null,
       enabled: this.getCheckbox(interaction, 'enabled', panel?.enabled ?? true) ? 1 : 0
     };
 

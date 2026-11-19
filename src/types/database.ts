@@ -41,6 +41,7 @@ export const DatabasePanel = BaseDatabaseItem.extend({
   pingSupportTeamOnOpen: DatabaseBoolean,
   supportTeamId: zod.string().nullable(),
   panelGroupId: zod.string().nullable(),
+  requiredOpeningRoleId: zod.string().nullable(),
   enabled: DatabaseBoolean
 });
 export type DatabasePanel = zod.infer<typeof DatabasePanel>;

@@ -295,7 +295,14 @@ export function MiscPanelModal(panel?: Panel | DatabasePanel) {
         .setRequired(true)
         .setValue(String(panel?.maxOpenTickets ?? 1))
     ),
-
+    new LabelBuilder().setLabel('Required role to open').setRoleSelectMenuComponent(
+      new RoleSelectMenuBuilder()
+        .setCustomId('requiredOpeningRoleId')
+        .setMinValues(0)
+        .setMaxValues(1)
+        .setRequired(false)
+        .setDefaultRoles(...(panel?.requiredOpeningRoleId ? [panel.requiredOpeningRoleId] : []))
+    ),
     new LabelBuilder()
       .setLabel('Enabled')
       .setCheckboxComponent(new CheckboxBuilder().setCustomId('enabled').setDefault(Boolean(panel?.enabled ?? 1)))

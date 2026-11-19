@@ -18,14 +18,14 @@ class CreateIssueModal extends DiscordModal {
 
   override async execute(interaction: InteractionWithGuild<ModalMessageModalSubmitInteraction>) {
     const possibleProjects = this.discord.application.database.searchProjectNames(
-      interaction.fields.getTextInputValue('project')
+      this.getTextInputValue(interaction, 'project', true)
     );
     if (possibleProjects.length === 0) {
       throw new PolyHelperError('Could not find any possible projects from your input');
     }
 
     const data = {
-      title: interaction.fields.getTextInputValue('title'),
+      title: this.getTextInputValue(interaction, 'title', true),
       description: this.getTextInputValue(interaction, 'description')?.trim() || undefined
     };
     const id = crypto.randomUUID();

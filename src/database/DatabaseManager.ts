@@ -99,7 +99,7 @@ class DatabaseManager extends BasicDatabaseManager {
     const lastUpdated: BaseDatabaseItem['lastUpdated'] = Date.now();
     this.db
       .prepare<DatabasePanel>(
-        'UPDATE panels SET lastUpdated = @lastUpdated, name = @name, title = @title, description = @description, buttonLabel = @buttonLabel, buttonEmoji = @buttonEmoji, buttonStyle = @buttonStyle, openingMessage = @openingMessage, openingMessageTitle = @openingMessageTitle, openingMessageContent = @openingMessageContent, maxOpenTickets = @maxOpenTickets, pinnedTicketPrefix = @pinnedTicketPrefix, closedTicketPrefix = @closedTicketPrefix, defaultTicketName = @defaultTicketName, pingSupportTeamOnOpen = @pingSupportTeamOnOpen, supportTeamId = @supportTeamId, panelGroupId = @panelGroupId, enabled = @enabled WHERE id = @id'
+        'UPDATE panels SET lastUpdated = @lastUpdated, name = @name, title = @title, description = @description, buttonLabel = @buttonLabel, buttonEmoji = @buttonEmoji, buttonStyle = @buttonStyle, openingMessage = @openingMessage, openingMessageTitle = @openingMessageTitle, openingMessageContent = @openingMessageContent, maxOpenTickets = @maxOpenTickets, pinnedTicketPrefix = @pinnedTicketPrefix, closedTicketPrefix = @closedTicketPrefix, defaultTicketName = @defaultTicketName, pingSupportTeamOnOpen = @pingSupportTeamOnOpen, supportTeamId = @supportTeamId, panelGroupId = @panelGroupId, requiredOpeningRoleId = @requiredOpeningRoleId, enabled = @enabled WHERE id = @id'
       )
       .run({ ...data, lastUpdated });
     const newPanel = this.getPanel(data.id);

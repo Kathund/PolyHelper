@@ -5,7 +5,7 @@ import PolyHelperError from '../../../private/error.ts';
 import Ticket from '../../../database/private/Ticket.ts';
 import { type ButtonInteraction, ChannelType, MessageFlags, ThreadAutoArchiveDuration } from 'discord.js';
 import { InteractionResponse, type InteractionWithGuild } from '../../../types/discord.ts';
-import { getUserDisplayName } from '../../../utils/discordUtils.ts';
+import { getUserDisplayName, hasRole } from '../../../utils/discordUtils.ts';
 
 class OpenTicketButton extends DiscordButton {
   override readonly metadata = new BasicInteractionMetadata('openTicket')
@@ -47,6 +47,21 @@ class OpenTicketButton extends DiscordButton {
 
     const blacklist = this.discord.application.database.getTicketBlacklistUserByUser(interaction.user.id);
     if (blacklist?.active) return await interaction.followUp({ embeds: [blacklist.toUserEmbed()] });
+
+    const requiredRole = await panel.getRequiredOpeningRole();
+    if (requiredRole) {
+      const has = await hasRole(interaction.member, requiredRole.id);
+      if (!has) {
+        return await interaction.followUp({
+          embeds: [
+            new EmbedHelper()
+              .setColor('Red')
+              .setTitle('Missing Required Role')
+              .setDescription(`You must have the <@&${requiredRole.id}> role to open a ticket of this type.`)
+          ]
+        });
+      }
+    }
 
     const channel = await panel.group.getChannel();
     const auditLogReason = `Ticket opened by ${getUserDisplayName(interaction.user)}`;

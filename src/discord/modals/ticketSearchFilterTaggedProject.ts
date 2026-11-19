@@ -25,7 +25,7 @@ class TicketSearchFilterTaggedProjectModal extends DiscordModal {
     if (!filters) throw new PolyHelperError('These ticket search filters have expired. Run the search again.');
 
     const possibleProjects = this.discord.application.database.searchProjectNames(
-      interaction.fields.getTextInputValue('project')
+      this.getTextInputValue(interaction, 'project', true)
     );
     if (possibleProjects.length === 0) {
       throw new PolyHelperError('Could not find any possible projects from your input');

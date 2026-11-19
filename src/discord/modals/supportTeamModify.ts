@@ -11,9 +11,9 @@ class SupportTeamModifyModal extends DiscordModal {
 
   override async execute(interaction: InteractionWithGuild<ModalMessageModalSubmitInteraction>) {
     const data: Omit<DatabaseSupportTeam, keyof BaseDatabaseItem> = {
-      name: interaction.fields.getTextInputValue('name'),
-      supportRole: this.getSelectedRole(interaction, 'supportRole'),
-      ticketPingRole: this.getSelectedRole(interaction, 'ticketPingRole')
+      name: this.getTextInputValue(interaction, 'name', true),
+      supportRole: this.getSelectedRole(interaction, 'supportRole', true),
+      ticketPingRole: this.getSelectedRole(interaction, 'ticketPingRole', true)
     };
 
     const [id] = this.getArgs(interaction);

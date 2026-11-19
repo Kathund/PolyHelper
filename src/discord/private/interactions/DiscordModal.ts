@@ -3,10 +3,26 @@ import PolyHelperError from '../../../private/error.ts';
 import type { ModalSubmitInteraction } from 'discord.js';
 
 abstract class DiscordModal extends BasicInteractionData<ModalSubmitInteraction> {
-  protected getTextInputValue(interaction: ModalSubmitInteraction, customId: string): string | undefined {
+  protected getTextInputValue(
+    interaction: ModalSubmitInteraction,
+    customId: string,
+    required: false
+  ): string | undefined;
+  protected getTextInputValue(interaction: ModalSubmitInteraction, customId: string, required?: true): string;
+  protected getTextInputValue(
+    interaction: ModalSubmitInteraction,
+    customId: string,
+    required: boolean = false
+  ): string | undefined {
     try {
-      return interaction.fields.getTextInputValue(customId).trim();
-    } catch {
+      const value = interaction.fields.getTextInputValue(customId).trim();
+      if (!value && required) {
+        throw new PolyHelperError(`Could not get the "${customId}" text input. It was empty`);
+      }
+      return value || undefined;
+    } catch (error) {
+      if (error instanceof PolyHelperError) throw error;
+      if (required) throw new PolyHelperError(`Could not get the "${customId}" text input`);
       return undefined;
     }
   }
@@ -22,9 +38,19 @@ abstract class DiscordModal extends BasicInteractionData<ModalSubmitInteraction>
     }
   }
 
-  protected getSelectedRole(interaction: ModalSubmitInteraction, customId: string): string {
+  protected getSelectedRole(interaction: ModalSubmitInteraction, customId: string, required: false): string | undefined;
+  protected getSelectedRole(interaction: ModalSubmitInteraction, customId: string, required?: true): string;
+  protected getSelectedRole(
+    interaction: ModalSubmitInteraction,
+    customId: string,
+    required: boolean = false
+  ): string | undefined {
     const role = this.getSelectedRoles(interaction, customId)[0];
-    if (!role) throw new PolyHelperError(`Could not get the "${customId}" role. There were no selected roles`);
+
+    if (!role && required) {
+      throw new PolyHelperError(`Could not get the "${customId}" role. There were no selected roles`);
+    }
+
     return role;
   }
 
@@ -36,10 +62,22 @@ abstract class DiscordModal extends BasicInteractionData<ModalSubmitInteraction>
     }
   }
 
-  protected getRadioGroup(interaction: ModalSubmitInteraction, customId: string): string | undefined {
+  protected getRadioGroup(interaction: ModalSubmitInteraction, customId: string, required: false): string | undefined;
+  protected getRadioGroup(interaction: ModalSubmitInteraction, customId: string, required?: true): string;
+  protected getRadioGroup(
+    interaction: ModalSubmitInteraction,
+    customId: string,
+    required: boolean = false
+  ): string | undefined {
     try {
-      return interaction.fields.getRadioGroup(customId) ?? undefined;
-    } catch {
+      const value = interaction.fields.getRadioGroup(customId) ?? undefined;
+      if (!value && required) {
+        throw new PolyHelperError(`Could not get the "${customId}" radio group. No value was selected`);
+      }
+      return value;
+    } catch (error) {
+      if (error instanceof PolyHelperError) throw error;
+      if (required) throw new PolyHelperError(`Could not get the "${customId}" radio group`);
       return undefined;
     }
   }
@@ -52,8 +90,22 @@ abstract class DiscordModal extends BasicInteractionData<ModalSubmitInteraction>
     }
   }
 
-  protected getStringSelectValue(interaction: ModalSubmitInteraction, customId: string): string | undefined {
-    return this.getStringSelectValues(interaction, customId)[0];
+  protected getStringSelectValue(
+    interaction: ModalSubmitInteraction,
+    customId: string,
+    required: false
+  ): string | undefined;
+  protected getStringSelectValue(interaction: ModalSubmitInteraction, customId: string, required?: true): string;
+  protected getStringSelectValue(
+    interaction: ModalSubmitInteraction,
+    customId: string,
+    required: boolean = false
+  ): string | undefined {
+    const value = this.getStringSelectValues(interaction, customId)[0];
+    if (!value && required) {
+      throw new PolyHelperError(`Could not get the "${customId}" select value. No value was selected`);
+    }
+    return value;
   }
 
   protected getSelectedUsers(interaction: ModalSubmitInteraction, customId: string): string[] {
@@ -64,8 +116,18 @@ abstract class DiscordModal extends BasicInteractionData<ModalSubmitInteraction>
     }
   }
 
-  protected getSelectedUser(interaction: ModalSubmitInteraction, customId: string): string | undefined {
-    return this.getSelectedUsers(interaction, customId)[0];
+  protected getSelectedUser(interaction: ModalSubmitInteraction, customId: string, required: false): string | undefined;
+  protected getSelectedUser(interaction: ModalSubmitInteraction, customId: string, required?: true): string;
+  protected getSelectedUser(
+    interaction: ModalSubmitInteraction,
+    customId: string,
+    required: boolean = false
+  ): string | undefined {
+    const user = this.getSelectedUsers(interaction, customId)[0];
+    if (!user && required) {
+      throw new PolyHelperError(`Could not get the "${customId}" user. There were no selected users`);
+    }
+    return user;
   }
 
   protected getSelectedChannels(interaction: ModalSubmitInteraction, customId: string): string[] {
@@ -76,9 +138,21 @@ abstract class DiscordModal extends BasicInteractionData<ModalSubmitInteraction>
     }
   }
 
-  protected getSelectedChannel(interaction: ModalSubmitInteraction, customId: string): string {
+  protected getSelectedChannel(
+    interaction: ModalSubmitInteraction,
+    customId: string,
+    required: false
+  ): string | undefined;
+  protected getSelectedChannel(interaction: ModalSubmitInteraction, customId: string, required?: true): string;
+  protected getSelectedChannel(
+    interaction: ModalSubmitInteraction,
+    customId: string,
+    required: boolean = false
+  ): string | undefined {
     const channel = this.getSelectedChannels(interaction, customId)[0];
-    if (!channel) throw new PolyHelperError(`Could not get the "${customId}" channel. There were no selected channels`);
+    if (!channel && required) {
+      throw new PolyHelperError(`Could not get the "${customId}" channel. There were no selected channels`);
+    }
     return channel;
   }
 }

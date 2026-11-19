@@ -15,7 +15,7 @@ class TicketStateUpdateModal extends DiscordModal {
     if (id === undefined) throw new PolyHelperError('Could not find this ticket?');
     const ticket = this.discord.application.database.getTicket(id);
     if (!ticket) throw new PolyHelperError('Could not find this ticket?');
-    const reason = getReason(interaction.fields.getTextInputValue('reason'));
+    const reason = getReason(this.getTextInputValue(interaction, 'reason', true));
     const rawId = this.getRawId(interaction);
     if (rawId === 'reopenTicket') {
       await interaction.followUp({ content: 'Attempting to open that ticket...' });

@@ -1,7 +1,7 @@
 import BaseParsedDatabaseItem from './BaseParsedDatabaseItem.ts';
 import EmbedHelper from '../../discord/private/EmbedHelper.ts';
 import PolyHelperError from '../../private/error.ts';
-import { ActionRowBuilder, type BaseMessageOptions, ButtonBuilder, ButtonStyle, type User } from 'discord.js';
+import { ActionRowBuilder, type BaseMessageOptions, ButtonBuilder, ButtonStyle, Role, type User } from 'discord.js';
 import { convertButtonStyleToHuman } from '../../utils/discordUtils.ts';
 import { replaceVariables } from '../../utils/stringUtils.ts';
 import type CloseRequest from './CloseRequest.ts';
@@ -30,6 +30,7 @@ class Panel extends BaseParsedDatabaseItem<DatabasePanel> {
   readonly #pingSupportTeamOnOpen: DatabasePanel['pingSupportTeamOnOpen'];
   readonly supportTeamId: DatabasePanel['supportTeamId'];
   readonly panelGroupId: DatabasePanel['panelGroupId'];
+  readonly requiredOpeningRoleId: DatabasePanel['requiredOpeningRoleId'];
   readonly #enabled: DatabasePanel['enabled'];
   constructor(data: DatabasePanel, manager: DatabaseManager) {
     super(data, manager);
@@ -49,6 +50,7 @@ class Panel extends BaseParsedDatabaseItem<DatabasePanel> {
     this.#pingSupportTeamOnOpen = data.pingSupportTeamOnOpen;
     this.supportTeamId = data.supportTeamId;
     this.panelGroupId = data.panelGroupId;
+    this.requiredOpeningRoleId = data.requiredOpeningRoleId;
     this.#enabled = data.enabled;
   }
 
@@ -127,6 +129,19 @@ class Panel extends BaseParsedDatabaseItem<DatabasePanel> {
     });
   }
 
+  async getRequiredOpeningRole(): Promise<Role | null> {
+    if (this.requiredOpeningRoleId === null) return null;
+    if (!this.manager.application.discord.isGuildReady()) {
+      throw new PolyHelperError("The discord bot doesn't seam to be online? Please restart the application");
+    }
+    const role = await this.manager.application.discord.guild.roles.fetch(this.requiredOpeningRoleId);
+    if (role === null) {
+      this.manager.updatePanel({ ...this.toJSON(), requiredOpeningRoleId: null });
+      return null;
+    }
+    return role;
+  }
+
   override toEmbed(): EmbedHelper {
     return super
       .toEmbed()
@@ -202,6 +217,7 @@ class Panel extends BaseParsedDatabaseItem<DatabasePanel> {
       pingSupportTeamOnOpen: this.#pingSupportTeamOnOpen,
       supportTeamId: this.supportTeamId,
       panelGroupId: this.panelGroupId,
+      requiredOpeningRoleId: this.requiredOpeningRoleId,
       enabled: this.#enabled
     };
   }

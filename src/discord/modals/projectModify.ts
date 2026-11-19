@@ -9,7 +9,7 @@ class ProejctModifyModal extends DiscordModal {
 
   override async execute(interaction: InteractionWithGuild<ModalMessageModalSubmitInteraction>) {
     const data: Omit<DatabaseProject, keyof BaseDatabaseItem> = {
-      name: interaction.fields.getTextInputValue('name'),
+      name: this.getTextInputValue(interaction, 'name', true),
       source: 'Discord Command',
       sourceUrl: this.getTextInputValue(interaction, 'sourceUrl')?.trim() || null,
       modrinthId: this.getTextInputValue(interaction, 'modrinthId')?.trim() || null,
