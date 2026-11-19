@@ -262,9 +262,11 @@ class Ticket extends BaseParsedDatabaseItem<DatabaseTicket> {
     await thread.send({ embeds: [new TicketActionEmbed({ title: 'Closed', reason, executor })] });
     const closeRequest = this.manager.getCloseRequestByTicketId(this.id);
     if (closeRequest) await this.manager.deleteCloseRequest(closeRequest.id);
+    const logMessage = await this.getTicketLogMessage();
+    if (logMessage) await logMessage.edit({ content: `~~${logMessage.content}~~` });
     await thread.setArchived(true, `Ticket closed by ${getUserDisplayName(executor)}`);
     this.manager.updateTicket({
-      ...(await updated.deleteTicketLogMessage()).toJSON(),
+      ...updated.toJSON(),
       closed: 1,
       closedBy: executor.id,
       closedReason: getReason(reason)
@@ -283,6 +285,8 @@ class Ticket extends BaseParsedDatabaseItem<DatabaseTicket> {
       silent: true
     });
     await thread.send({ embeds: [new TicketActionEmbed({ title: 'Opened', reason, executor })] });
+    const logMessage = await this.getTicketLogMessage();
+    if (logMessage) await logMessage.edit({ content: logMessage.content.replaceAll('~', '') });
     this.manager.updateTicket({ ...updated.toJSON(), closed: 0, closedBy: null, closedReason: null });
   }
 
@@ -419,12 +423,6 @@ class Ticket extends BaseParsedDatabaseItem<DatabaseTicket> {
     const message = await logs.messages.fetch(this.ticketLogsMesageId).catch(() => null);
     if (!message) throw new PolyHelperError('Could not find the matching ticket log message?');
     return message;
-  }
-
-  async deleteTicketLogMessage(): Promise<Ticket> {
-    const ticketLogMesasge = await this.getTicketLogMessage();
-    if (ticketLogMesasge) await ticketLogMesasge.delete();
-    return this.manager.updateTicket({ ...this.toJSON(), ticketLogsMesageId: null });
   }
 
   async transfer({ reason, executor, user, silent }: TicketAction & { user: User; silent?: boolean }) {
