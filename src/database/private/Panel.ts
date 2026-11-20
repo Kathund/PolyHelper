@@ -131,10 +131,7 @@ class Panel extends BaseParsedDatabaseItem<DatabasePanel> {
 
   async getRequiredOpeningRole(): Promise<Role | null> {
     if (this.requiredOpeningRoleId === null) return null;
-    if (!this.manager.application.discord.isGuildReady()) {
-      throw new PolyHelperError("The discord bot doesn't seam to be online? Please restart the application");
-    }
-    const role = await this.manager.application.discord.guild.roles.fetch(this.requiredOpeningRoleId);
+    const role = await this.getRole(this.requiredOpeningRoleId, false);
     if (role === null) {
       this.manager.updatePanel({ ...this.toJSON(), requiredOpeningRoleId: null });
       return null;

@@ -1,6 +1,13 @@
 import EmbedHelper from '../../discord/private/EmbedHelper.ts';
 import PolyHelperError from '../../private/error.ts';
-import { ActionRowBuilder, type BaseMessageOptions, ButtonBuilder, ButtonStyle, type GuildMember } from 'discord.js';
+import {
+  ActionRowBuilder,
+  type BaseMessageOptions,
+  ButtonBuilder,
+  ButtonStyle,
+  type GuildMember,
+  Role
+} from 'discord.js';
 import type DatabaseManager from '../DatabaseManager.ts';
 import type { AutocompleteOption } from '../../types/discord.ts';
 import type { BaseDatabaseItem } from '../../types/database.ts';
@@ -16,13 +23,30 @@ abstract class BaseParsedDatabaseItem<DatabaseType> {
     this.lastUpdated = data.lastUpdated;
   }
 
-  protected async getGuildMember(userId: string): Promise<GuildMember> {
+  protected async getGuildMember(userId: string, required?: true): Promise<GuildMember>;
+  protected async getGuildMember(userId: string, required: false): Promise<GuildMember | null>;
+  protected async getGuildMember(userId: string, required: boolean = true): Promise<GuildMember | null> {
     if (!this.manager.application.discord.isGuildReady()) {
       await this.manager.application.discord.loadGuild();
       throw new PolyHelperError("The discord server isn't ready. Please try again later");
     }
 
-    return await this.manager.application.discord.guild.members.fetch(userId);
+    const user = await this.manager.application.discord.guild.members.fetch(userId).catch(() => null);
+    if (!user && required) throw new PolyHelperError(`Could not get the "${userId}" user`);
+    return user;
+  }
+
+  protected async getRole(roleId: string, required?: true): Promise<Role>;
+  protected async getRole(roleId: string, required: false): Promise<Role | null>;
+  protected async getRole(roleId: string, required: boolean = true): Promise<Role | null> {
+    if (!this.manager.application.discord.isGuildReady()) {
+      await this.manager.application.discord.loadGuild();
+      throw new PolyHelperError("The discord server isn't ready. Please try again later");
+    }
+
+    const role = await this.manager.application.discord.guild.roles.fetch(roleId);
+    if (!role && required) throw new PolyHelperError(`Could not get the "${roleId}" role`);
+    return role;
   }
 
   toEmbed(): EmbedHelper {

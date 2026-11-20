@@ -85,13 +85,16 @@ class OpenTicketButton extends DiscordButton {
         content: [
           message.content,
           `<@&${panel.supportTeam.supportRole}>`,
-          `<@&${panel.supportTeam.ticketPingRole}>`
+          `<@&${panel.supportTeam.newTicketPingRole}>`,
+          `<@&${panel.supportTeam.inactivityTicketPingRole}>`
         ].join('\n')
       });
       await message.delete();
 
       if (panel.pingSupportTeamOnOpen) {
-        await thread.send({ content: `<@&${panel.supportTeam.ticketPingRole}>` }).then((message) => message.delete());
+        await thread
+          .send({ content: `<@&${panel.supportTeam.newTicketPingRole}>` })
+          .then((message) => message.delete());
       }
     }
 

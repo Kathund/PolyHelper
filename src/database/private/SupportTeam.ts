@@ -1,5 +1,4 @@
 import BaseParsedDatabaseItem from './BaseParsedDatabaseItem.ts';
-import PolyHelperError from '../../private/error.ts';
 import {
   ActionRowBuilder,
   type BaseMessageOptions,
@@ -18,38 +17,30 @@ import type { DatabaseSupportTeam } from '../../types/database.ts';
 class SupportTeam extends BaseParsedDatabaseItem<DatabaseSupportTeam> {
   readonly name: DatabaseSupportTeam['name'];
   readonly supportRole: DatabaseSupportTeam['supportRole'];
-  readonly ticketPingRole: DatabaseSupportTeam['ticketPingRole'];
+  readonly newTicketPingRole: DatabaseSupportTeam['newTicketPingRole'];
+  readonly inactivityTicketPingRole: DatabaseSupportTeam['inactivityTicketPingRole'];
   constructor(data: DatabaseSupportTeam, manager: DatabaseManager) {
     super(data, manager);
     this.name = data.name;
     this.supportRole = data.supportRole;
-    this.ticketPingRole = data.ticketPingRole;
-  }
-
-  async getSupportRole(): Promise<Role> {
-    if (!this.manager.application.discord.isGuildReady()) {
-      await this.manager.application.discord.loadGuild();
-      throw new PolyHelperError("The discord server isn't ready. Please try again later");
-    }
-
-    const role = await this.manager.application.discord.guild.roles.fetch(this.supportRole);
-    if (!role) throw new PolyHelperError('Could not fine the support role');
-    return role;
-  }
-
-  async getTicketPingRole(): Promise<Role> {
-    if (!this.manager.application.discord.isGuildReady()) {
-      await this.manager.application.discord.loadGuild();
-      throw new PolyHelperError("The discord server isn't ready. Please try again later");
-    }
-
-    const role = await this.manager.application.discord.guild.roles.fetch(this.ticketPingRole);
-    if (!role) throw new PolyHelperError('Could not fine the support role');
-    return role;
+    this.newTicketPingRole = data.newTicketPingRole;
+    this.inactivityTicketPingRole = data.inactivityTicketPingRole;
   }
 
   get panels(): Panel[] {
     return this.manager.getPanels({ supportTeamId: this.id });
+  }
+
+  async getSupportRole(): Promise<Role> {
+    return await this.getRole(this.supportRole);
+  }
+
+  async getNewTicketPingRole(): Promise<Role> {
+    return await this.getRole(this.newTicketPingRole);
+  }
+
+  async getInactivityTicketPingRole(): Promise<Role> {
+    return await this.getRole(this.inactivityTicketPingRole);
   }
 
   override toEmbed(): EmbedHelper {
@@ -59,7 +50,11 @@ class SupportTeam extends BaseParsedDatabaseItem<DatabaseSupportTeam> {
       .addFields(
         { name: 'Name', value: this.name, format: 'Block' },
         { name: 'Support Role', value: `<@&${this.supportRole}> (\`${this.supportRole}\`)` },
-        { name: 'Ticket Ping Role', value: `<@&${this.ticketPingRole}> (\`${this.ticketPingRole}\`)` },
+        { name: 'New Ticket Ping Role', value: `<@&${this.newTicketPingRole}> (\`${this.newTicketPingRole}\`)` },
+        {
+          name: 'Ticket Inactivity Ping Role',
+          value: `<@&${this.inactivityTicketPingRole}> (\`${this.inactivityTicketPingRole}\`)`
+        },
         { name: 'Amount of Panels', value: this.panels.length, format: 'Number Small Block' }
       );
   }
@@ -93,7 +88,8 @@ class SupportTeam extends BaseParsedDatabaseItem<DatabaseSupportTeam> {
       lastUpdated: this.lastUpdated,
       name: this.name,
       supportRole: this.supportRole,
-      ticketPingRole: this.ticketPingRole
+      newTicketPingRole: this.newTicketPingRole,
+      inactivityTicketPingRole: this.inactivityTicketPingRole
     };
   }
 }

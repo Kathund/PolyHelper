@@ -4,7 +4,12 @@ import { InteractionResponse, type InteractionWithGuild } from '../../types/disc
 import type { ButtonInteraction } from 'discord.js';
 
 class DeprecatedButton extends DiscordButton {
-  override readonly metadata = new BasicInteractionMetadata(['refreshTicketsOverviewEmbed', 'joinActiveTickets'])
+  override readonly metadata = new BasicInteractionMetadata([
+    'refreshTicketsOverviewEmbed',
+    'joinActiveTickets',
+    'closeRequestAccept',
+    'closeRequestDeny'
+  ])
     .setResponse(InteractionResponse.Ephemeral)
     .setFetchGuildMember(false);
 

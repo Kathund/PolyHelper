@@ -265,16 +265,18 @@ class DatabaseManager extends BasicDatabaseManager {
       .prepare<
         {
           supportRole: DatabaseSupportTeam['supportRole'] | null;
-          ticketPingRole: DatabaseSupportTeam['ticketPingRole'] | null;
+          newTicketPingRole: DatabaseSupportTeam['newTicketPingRole'] | null;
+          inactivityTicketPingRole: DatabaseSupportTeam['inactivityTicketPingRole'] | null;
           limit: number;
         },
         DatabaseSupportTeam
       >(
-        `SELECT * FROM supportTeams WHERE (@supportRole IS NULL OR supportRole = @supportRole) AND (@ticketPingRole IS NULL OR ticketPingRole = @ticketPingRole)${order} LIMIT @limit`
+        `SELECT * FROM supportTeams WHERE (@supportRole IS NULL OR supportRole = @supportRole) AND (@newTicketPingRole IS NULL OR newTicketPingRole = @newTicketPingRole) AND (@inactivityTicketPingRole IS NULL OR inactivityTicketPingRole = @inactivityTicketPingRole)${order} LIMIT @limit`
       )
       .all({
         supportRole: filters.supportRole ?? null,
-        ticketPingRole: filters.ticketPingRole ?? null,
+        newTicketPingRole: filters.newTicketPingRole ?? null,
+        inactivityTicketPingRole: filters.newTicketPingRole ?? null,
         limit: filters.limit ?? -1
       })
       .map((data) => new SupportTeam(data, this));
@@ -284,7 +286,7 @@ class DatabaseManager extends BasicDatabaseManager {
     const missingData: BaseDatabaseItem = { id: crypto.randomUUID(), lastUpdated: Date.now() };
     this.db
       .prepare<DatabaseSupportTeam>(
-        'INSERT INTO supportTeams (id, lastUpdated, name, supportRole, ticketPingRole) VALUES (@id, @lastUpdated, @name, @supportRole, @ticketPingRole)'
+        'INSERT INTO supportTeams (id, lastUpdated, name, supportRole, newTicketPingRole, inactivityTicketPingRole) VALUES (@id, @lastUpdated, @name, @supportRole, @newTicketPingRole, @inactivityTicketPingRole)'
       )
       .run({ ...data, ...missingData });
     return new SupportTeam({ ...data, ...missingData }, this);
@@ -294,7 +296,7 @@ class DatabaseManager extends BasicDatabaseManager {
     const lastUpdated: BaseDatabaseItem['lastUpdated'] = Date.now();
     const update = this.db
       .prepare<DatabaseSupportTeam>(
-        'UPDATE supportTeams SET lastUpdated = @lastUpdated, name = @name, supportRole = @supportRole, ticketPingRole = @ticketPingRole WHERE id = @id'
+        'UPDATE supportTeams SET lastUpdated = @lastUpdated, name = @name, supportRole = @supportRole, newTicketPingRole = @newTicketPingRole, inactivityTicketPingRole = @inactivityTicketPingRole WHERE id = @id'
       )
       .run({ ...data, lastUpdated });
     if (update.changes === 0) throw new PolyHelperError('Could not find this support team?');

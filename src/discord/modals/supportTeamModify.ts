@@ -13,7 +13,8 @@ class SupportTeamModifyModal extends DiscordModal {
     const data: Omit<DatabaseSupportTeam, keyof BaseDatabaseItem> = {
       name: this.getTextInputValue(interaction, 'name', true),
       supportRole: this.getSelectedRole(interaction, 'supportRole', true),
-      ticketPingRole: this.getSelectedRole(interaction, 'ticketPingRole', true)
+      newTicketPingRole: this.getSelectedRole(interaction, 'newTicketPingRole', true),
+      inactivityTicketPingRole: this.getSelectedRole(interaction, 'inactivityTicketPingRole', true)
     };
 
     const [id] = this.getArgs(interaction);

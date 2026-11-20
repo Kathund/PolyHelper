@@ -7,7 +7,6 @@ import {
   type BaseMessageOptions,
   ButtonBuilder,
   ButtonStyle,
-  DiscordAPIError,
   type GuildMember,
   type Message,
   MessageFlags,
@@ -92,24 +91,21 @@ class Ticket extends BaseParsedDatabaseItem<DatabaseTicket> {
   }
 
   async getOwnerDiscord(): Promise<GuildMember> {
-    try {
-      return await this.getGuildMember(this.owner);
-    } catch (error) {
-      if (!(error instanceof DiscordAPIError) || error.code !== 10007) throw error;
-      const thread = await this.getThread();
-      await thread.send({
-        content: 'Ticket owner left, please chase them down.',
-        components: [
-          new ActionRowBuilder<ButtonBuilder>().addComponents(
-            new ButtonBuilder()
-              .setLabel('Close Ticket')
-              .setStyle(ButtonStyle.Danger)
-              .setCustomId(`closeTicket:${this.id}:User_Left`)
-          )
-        ]
-      });
-      throw new PolyHelperError('Ticket owner left, please chase them down.');
-    }
+    const user = await this.getGuildMember(this.owner, false);
+    if (user !== null) return user;
+    const thread = await this.getThread();
+    await thread.send({
+      content: 'Ticket owner left, please chase them down.',
+      components: [
+        new ActionRowBuilder<ButtonBuilder>().addComponents(
+          new ButtonBuilder()
+            .setLabel('Close Ticket')
+            .setStyle(ButtonStyle.Danger)
+            .setCustomId(`closeTicket:${this.id}:User_Left`)
+        )
+      ]
+    });
+    throw new PolyHelperError('Ticket owner left, please chase them down.');
   }
 
   async getThread(): Promise<TextThreadChannel> {
@@ -137,10 +133,9 @@ class Ticket extends BaseParsedDatabaseItem<DatabaseTicket> {
     if (!thread.sendable || thread.locked) return this;
     if (thread.archived) await thread.setArchived(false, 'Sending a ticket inactivity reminder');
 
-    const supportRole = this.panel.supportTeam?.ticketPingRole ?? this.manager.application.config.discord.roles.support;
     const message = await thread.send({
       content: [
-        `This ticket appears to be inactive. <@&${supportRole}> <@${this.owner}>`,
+        `This ticket appears to be inactive. <@${this.owner}> ${this.panel.supportTeam?.inactivityTicketPingRole ? `<@&${this.panel.supportTeam.inactivityTicketPingRole}>` : ''}`.trim(),
         this.lastMessageTimestamp === null
           ? 'No messages have been sent yet.'
           : `Last message was <t:${Math.floor(this.lastMessageTimestamp / 1000)}:R>`,

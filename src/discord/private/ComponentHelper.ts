@@ -343,13 +343,21 @@ export function SupportTeamModal(supportTeam?: SupportTeam | DatabaseSupportTeam
         .setRequired(true)
         .setDefaultRoles(...(supportTeam?.supportRole ? [supportTeam.supportRole] : []))
     ),
-    new LabelBuilder().setLabel('ticket ping role').setRoleSelectMenuComponent(
+    new LabelBuilder().setLabel('new ticket ping role').setRoleSelectMenuComponent(
       new RoleSelectMenuBuilder()
-        .setCustomId('ticketPingRole')
+        .setCustomId('newTicketPingRole')
         .setMinValues(1)
         .setMaxValues(1)
         .setRequired(true)
-        .setDefaultRoles(...(supportTeam?.ticketPingRole ? [supportTeam.ticketPingRole] : []))
+        .setDefaultRoles(...(supportTeam?.newTicketPingRole ? [supportTeam.newTicketPingRole] : []))
+    ),
+    new LabelBuilder().setLabel('ticket inactivity ping role').setRoleSelectMenuComponent(
+      new RoleSelectMenuBuilder()
+        .setCustomId('inactivityTicketPingRole')
+        .setMinValues(1)
+        .setMaxValues(1)
+        .setRequired(true)
+        .setDefaultRoles(...(supportTeam?.inactivityTicketPingRole ? [supportTeam.inactivityTicketPingRole] : []))
     )
   );
 }

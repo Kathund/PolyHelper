@@ -46,11 +46,9 @@ abstract class DiscordModal extends BasicInteractionData<ModalSubmitInteraction>
     required: boolean = false
   ): string | undefined {
     const role = this.getSelectedRoles(interaction, customId)[0];
-
     if (!role && required) {
       throw new PolyHelperError(`Could not get the "${customId}" role. There were no selected roles`);
     }
-
     return role;
   }
 

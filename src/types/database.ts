@@ -106,13 +106,15 @@ export interface CloseRequestSearchFilters extends DatabaseSearchFilters<'AutoCl
 export const DatabaseSupportTeam = BaseDatabaseItem.extend({
   name: zod.string(),
   supportRole: zod.string(),
-  ticketPingRole: zod.string()
+  newTicketPingRole: zod.string(),
+  inactivityTicketPingRole: zod.string()
 });
 export type DatabaseSupportTeam = zod.infer<typeof DatabaseSupportTeam>;
 
 export interface SupportTeamSearchFilters extends DatabaseSearchFilters {
   supportRole?: DatabaseSupportTeam['supportRole'];
-  ticketPingRole?: DatabaseSupportTeam['ticketPingRole'];
+  newTicketPingRole?: DatabaseSupportTeam['newTicketPingRole'];
+  inactivityTicketPingRole?: DatabaseSupportTeam['inactivityTicketPingRole'];
 }
 
 export const DatabaseTicketBlacklistUser = BaseDatabaseItem.extend({
